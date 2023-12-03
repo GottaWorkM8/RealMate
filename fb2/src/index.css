@@ -5,9 +5,10 @@
 #root {
   width: 100vw;
   height: 100vh;
+  background-color: #eceff1;
   overflow: auto;
 }
 
 ::selection {
-  background: #cbd5e1;
+  background-color: #80cbc4;
 }

@@ -4,24 +4,24 @@ module.exports = withMT({
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     colors: {
-      primary1: "#10b981", // emerald 500
-      primary2: "#a7f3d0", // emerald 200
-      primary3: "#ecfdf5", // emerald 50
-      secondary1: "#64748b", // slate 500
-      secondary2: "#94a3b8", // slate 400
-      secondary3: "#e2e8f0", // slate 200
-      secondary4: "#f1f5f9", // slate 100
-      text1: "#4b5563", // gray 600
-      text2: "#9ca3af", // gray 400
+      primary1: "#009688", // teal 500
+      primary2: "#80cbc4", // teal 200
+      primary3: "#e0f2f1", // teal 50
+      secondary1: "#90a4ae", // blue gray 300
+      secondary2: "#eceff1", // blue gray 50
+      text1: "#263238", // blue gray 900
+      text2: "#455a64", // blue gray 700
+      text3: "#607d8b", // blue gray 500
+      text4: "#78909c", // blue gray 400
+      text5: "#b0bec5", // blue gray 200
     },
     fontFamily: {
-      'sans': ['ui-sans-serif', 'system-ui'],
-      'serif': ['ui-serif', 'Georgia'],
-      'mono': ['ui-monospace', 'SFMono-Regular'],
-      'display': ['Oswald'],
-      'body': ['"Open Sans"'],
+      sans: ["ui-sans-serif", "system-ui"],
+      serif: ["ui-serif", "Georgia"],
+      mono: ["ui-monospace", "SFMono-Regular"],
+      display: ["Oswald"],
+      body: ['"Open Sans"'],
     },
-    extend: {},
   },
   plugins: [],
 });
