@@ -1,11 +1,15 @@
 // IMPORTS
 import React, { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import { NavLink, useNavigate } from "react-router-dom";
-import "index.css";
-import logo4 from "./../assets/logo4.png";
+import { useNavigate } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 import { Input, Button, Checkbox } from "@material-tailwind/react";
+import { auth } from "../firebase";
+import logo from "../assets/label.png";
+import "index.css";
 
 const Login = () => {
   // NAVIGATION TO OTHER PAGES
@@ -18,11 +22,19 @@ const Login = () => {
   // SIGN IN
   const login = (e) => {
     e.preventDefault();
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        navigate("/home");
-        console.log(user);
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        signInWithEmailAndPassword(auth, email, password)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            navigate("/home");
+            console.log(user);
+          })
+          .catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            console.log(errorCode, errorMessage);
+          });
       })
       .catch((error) => {
         const errorCode = error.code;
@@ -32,9 +44,9 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full items-center text-center p-3 pb-12 bg-secondary2">
+    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary3">
       <div className="mt-3 mb-9 mx-6">
-        <img className="-mb-3 mx-auto scale-50" src={logo4} alt="" />
+        <img className="-mb-3 mx-auto scale-50" src={logo} alt="" />
         <p className="text-text3">Freedom and connectivity</p>
       </div>
       <div className="max-w-xl p-6 text-start bg-white rounded-xl shadow-lg">
@@ -46,11 +58,13 @@ const Login = () => {
             Login using your email address and password
           </p>
         </div>
-        <form>
+        <form noValidate>
           <div className="my-3">
             <Input
               type="email"
               label="Email address"
+              maxLength={50}
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
               color="teal"
               crossOrigin={undefined}
@@ -60,6 +74,8 @@ const Login = () => {
             <Input
               type="password"
               label="Password"
+              maxLength={50}
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
               color="teal"
               crossOrigin={undefined}

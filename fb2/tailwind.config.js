@@ -6,9 +6,11 @@ module.exports = withMT({
     colors: {
       primary1: "#009688", // teal 500
       primary2: "#80cbc4", // teal 200
-      primary3: "#e0f2f1", // teal 50
+      primary3: "#b2dfdb", // teal 100
+      primary4: "#e0f2f1", // teal 50
       secondary1: "#90a4ae", // blue gray 300
-      secondary2: "#eceff1", // blue gray 50
+      secondary2: "#cfd8dc", // blue gray 100
+      secondary3: "#eceff1", // blue gray 50
       text1: "#263238", // blue gray 900
       text2: "#455a64", // blue gray 700
       text3: "#607d8b", // blue gray 500

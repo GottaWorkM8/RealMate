@@ -3,8 +3,6 @@
 @tailwind utilities;
 
 #root {
-  width: 100vw;
-  height: 100vh;
   background-color: #eceff1;
   overflow: auto;
 }
