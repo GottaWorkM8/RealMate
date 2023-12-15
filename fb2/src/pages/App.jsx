@@ -17,19 +17,6 @@ const App = () => {
   // NAVIGATION TO OTHER PAGES
   const navigate = useNavigate();
 
-  // SIGN OUT
-  const logout = () => {
-    signOut(auth)
-      .then(() => {
-        // Sign-out successful.
-        navigate("/login");
-        console.log("Signed out successfully");
-      })
-      .catch((error) => {
-        // An error happened.
-      });
-  };
-
   // USER AUTH STATE OBSERVER
   const auth = getAuth();
   onAuthStateChanged(auth, (user) => {
@@ -48,6 +35,7 @@ const App = () => {
     <div className="app h-screen">
       <Routes>
         <Route
+          path="/"
           element={
             <>
               <CustomNavbar />
@@ -55,14 +43,17 @@ const App = () => {
             </>
           }
         >
-          <Route path="/" element={<Home />} />
-          <Route path="/chats" element={<Chats />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/groups" element={<Groups />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route index element={<Home />} />
+          <Route path="chats" element={<Chats />} />
+          <Route path="chats/:chatId" element={<Chats />} />
+          <Route path="friends" element={<Friends />} />
+          <Route path="friends/:category" element={<Friends />} />
+          <Route path="groups" element={<Groups />} />
+          <Route path="groups/:category" element={<Groups />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+        <Route path="login" element={<Login />} />
       </Routes>
     </div>
   );

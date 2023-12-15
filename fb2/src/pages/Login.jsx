@@ -27,7 +27,7 @@ const Login = () => {
         signInWithEmailAndPassword(auth, email, password)
           .then((userCredential) => {
             const user = userCredential.user;
-            navigate("/home");
+            navigate("/");
             console.log(user);
           })
           .catch((error) => {
@@ -44,17 +44,17 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary3">
+    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary-4">
       <div className="mt-3 mb-9 mx-6">
         <img className="-mb-3 mx-auto scale-50" src={logo} alt="" />
-        <p className="text-text3">Freedom and connectivity</p>
+        <p className="text-text-3">Freedom and connectivity</p>
       </div>
-      <div className="max-w-xl p-6 text-start bg-white rounded-xl shadow-lg">
+      <div className="max-w-xl p-6 text-start bg-background rounded-xl shadow-lg">
         <div className="mb-6 px-3 space-y-1">
-          <h1 className="text-3xl text-center text-text1 font-medium">
+          <h1 className="text-3xl text-center text-text-1 font-medium">
             Sign In
           </h1>
-          <p className="text-center text-text3 text-sm">
+          <p className="text-center text-text-3 text-sm">
             Login using your email address and password
           </p>
         </div>
@@ -84,10 +84,10 @@ const Login = () => {
           <div className="my-3 flex">
             <div className="w-1/2 flex items-center justify-start text-sm">
               <Checkbox color="teal" crossOrigin={undefined} />
-              <p className="text-text3">Remember me</p>
+              <p className="text-text-3">Remember me</p>
             </div>
             <div className="w-1/2 flex items-center justify-end text-sm">
-              <a href="link" className="text-primary1">
+              <a href="link" className="text-primary-1">
                 Forgot my password
               </a>
             </div>
@@ -104,9 +104,9 @@ const Login = () => {
             </Button>
           </div>
         </form>
-        <p className="text-text3 text-center text-sm">
+        <p className="text-text-3 text-center text-sm">
           Don't have an account?{" "}
-          <a className="text-primary1" href="/register">
+          <a className="text-primary-1" href="/register">
             Sign up
           </a>
         </p>

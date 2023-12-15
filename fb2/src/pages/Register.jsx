@@ -200,17 +200,17 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary3">
+    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary-4">
       <div className="mt-3 mb-9 mx-6">
         <img className="-mb-3 mx-auto scale-50" src={logo} alt="" />
-        <p className="text-text3 ">Freedom and connectivity</p>
+        <p className="text-text-3 ">Freedom and connectivity</p>
       </div>
-      <div className="max-w-xl p-6 text-start bg-white rounded-xl shadow-lg">
+      <div className="max-w-xl p-6 text-start bg-background rounded-xl shadow-lg">
         <div className="mb-6 px-3 space-y-1">
-          <h1 className="text-3xl text-center text-text1 font-medium">
+          <h1 className="text-3xl text-center text-text-1 font-medium">
             Sign Up
           </h1>
-          <p className="text-center text-text3 text-sm">
+          <p className="text-center text-text-3 text-sm">
             Provide necessary data to register
           </p>
         </div>
@@ -384,18 +384,18 @@ const Register = () => {
                 crossOrigin={undefined}
               ></Checkbox>
               <div className="flex flex-row items-center">
-                <p className="text-text3">
+                <p className="text-text-3">
                   I read and agree to{" "}
                   <button
                     type="button"
                     onClick={handleOpen}
-                    className="text-primary1"
+                    className="text-primary-1"
                   >
                     Terms & Conditions
                   </button>
                   <Dialog open={open} handler={handleOpen}>
                     <DialogHeader>RealMate Terms & Conditions</DialogHeader>
-                    <DialogBody className="h-[32rem] overflow-y-scroll">
+                    <DialogBody className="dialog overflow-auto">
                       Last Updated: [01-12-2023]
                       <br />
                       <br />
@@ -497,9 +497,9 @@ const Register = () => {
             </Button>
           </div>
         </form>
-        <p className="text-text3 text-center text-sm">
+        <p className="text-text-3 text-center text-sm">
           Already have an account?{" "}
-          <a className="text-primary1" href="/login">
+          <a className="text-primary-1" href="/login">
             Login
           </a>
         </p>

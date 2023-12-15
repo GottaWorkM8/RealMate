@@ -2,11 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --color-primary1: 0 150 136;
+    --color-primary2: 128 203 196;
+    --color-primary3: 178 223 219;
+    --color-primary4: 224 242 241;
+    --color-secondary1: 144 164 174;
+    --color-secondary2: 176 190 197;
+    --color-secondary3: 207 216 220;
+    --color-secondary4: 236 239 241;
+    --color-text1: 38 50 56;
+    --color-text2: 69 90 100;
+    --color-text3: 96 125 139;
+    --color-text4: 120 144 156;
+    --color-background: 255 255 255;
+    --color-tooltip: 38 50 56;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-primary2: 0 121 107;
+      --color-primary3: 0 105 92;
+      --color-primary4: 0 77 64;
+      --color-secondary1: 96 125 139;
+      --color-secondary2: 69 90 100;
+      --color-secondary3: 55 71 79;
+      --color-secondary4: 38 50 56;
+      --color-text1: 236 239 241;
+      --color-text2: 207 216 220;
+      --color-text3: 176 190 197;
+      --color-background: 33 33 33;
+    }
+  }
+}
+
 #root {
-  background-color: #eceff1;
-  overflow: auto;
+  background-color: rgb(var(--color-background));
 }
 
 ::selection {
   background-color: #80cbc4;
+}
+
+.dialog {
+  height: 60vh;
+}
+
+.chats-panel {
+  height: calc(100vh - 4rem);
 }
