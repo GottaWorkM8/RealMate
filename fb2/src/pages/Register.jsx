@@ -1,14 +1,6 @@
 // IMPORTS
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  updateProfile,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
-import { auth, db, storage } from "../firebase";
-import { ref, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, collection } from "firebase/firestore";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -74,70 +66,70 @@ const Register = () => {
   };
 
   // FUNCTIONS FOR INPUT VALIDATION
-  const validateFirstName = () => {
-  const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
-  const error = firstName.length < 1 || !hasValidCharacters.test(firstName);
+  const validateFirstName = (fName) => {
+    const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
+    const error = fName.length < 1 || !hasValidCharacters.test(fName);
 
-  setFirstNameError(error);
-  return !error;
-};
+    setFirstNameError(error);
+    return !error;
+  };
 
-const validateLastName = () => {
-  const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
-  const error = lastName.length < 1 || !hasValidCharacters.test(lastName);
+  const validateLastName = (lName) => {
+    const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
+    const error = lName.length < 1 || !hasValidCharacters.test(lName);
 
-  setLastNameError(error);
-  return !error;
-};
+    setLastNameError(error);
+    return !error;
+  };
 
-  const validateEmail = () => {
+  const validateEmail = (mail) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const hasNoWhitespace = /^\S*$/;
     const error =
-      !emailRegex.test(email) ||
-      !hasNoWhitespace.test(email) ||
-      email.trim() !== email;
+      !emailRegex.test(mail) ||
+      !hasNoWhitespace.test(mail) ||
+      mail.trim() !== mail;
     setEmailError(error);
     return !error;
   };
 
-  const validatePassword = () => {
+  const validatePassword = (pass) => {
     const minLength = 8;
     const hasUppercase = /[A-Z]/;
     const hasLowercase = /[a-z]/;
     const hasNumber = /\d/;
     const hasValidCharacters = /^[a-zA-Z0-9]+$/;
     const error =
-      password.length < minLength ||
-      !hasUppercase.test(password) ||
-      !hasLowercase.test(password) ||
-      !hasNumber.test(password) ||
-      !hasValidCharacters.test(password);
+      pass.length < minLength ||
+      !hasUppercase.test(pass) ||
+      !hasLowercase.test(pass) ||
+      !hasNumber.test(pass) ||
+      !hasValidCharacters.test(pass);
 
     setPasswordError(error);
     return !error;
   };
 
-  const validateRepeatPassword = () => {
-    const error = repeatPassword !== password;
+  const validateRepeatPassword = (pass, repPass) => {
+    const error = repPass !== pass;
 
     setRepeatPasswordError(error);
     return !error;
   };
 
-  const validateBirthdate = () => {
+  const validateBirthdate = (bDate) => {
     const error =
       !birthdate ||
-      isNaN(birthdate) ||
-      new Date(birthdate) > new Date() ||
-      new Date(birthdate).getFullYear() < 1900;
+      isNaN(bDate) ||
+      new Date(bDate) > new Date() ||
+      new Date(bDate).getFullYear() < 1900;
 
     setBirthdateError(error);
     return !error;
   };
 
-  const validateCheck = () => {
-    const error = !checked;
+  const validateCheck = (check) => {
+    const error = !check;
 
     setCheckError(error);
     return !error;
@@ -147,15 +139,15 @@ const validateLastName = () => {
   const datePickerRef = useRef(null);
 
   // FUNCTION FOR FORM VALIDATION
-  const formValid = () => {
+  const formValid = (fName, lName, mail, pass, repPass, bDate, check) => {
     return (
-      validateFirstName() &&
-      validateLastName() &&
-      validateEmail() &&
-      validatePassword() &&
-      validateRepeatPassword() &&
-      validateBirthdate() &&
-      validateCheck()
+      validateFirstName(fName) &&
+      validateLastName(lName) &&
+      validateEmail(mail) &&
+      validatePassword(pass) &&
+      validateRepeatPassword(pass, repPass) &&
+      validateBirthdate(bDate) &&
+      validateCheck(check)
     );
   };
 
@@ -168,9 +160,17 @@ const validateLastName = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setApiError(false);
-    if (formValid()) {
+    const fName = firstName;
+    const lName = lastName;
+    const mail = email;
+    const pass = password;
+    const repPass = repeatPassword;
+    const bDate = birthdate;
+    const check = checked;
+
+    if (formValid(fName, lName, mail, pass, repPass, bDate, check)) {
       try {
-        await register(firstName, lastName, email, password, birthdate);
+        await register(fName, lName, mail, pass, bDate);
       } catch (error) {
         const errorCode = error.code;
         const errorMsg = error.msg;
@@ -209,7 +209,7 @@ const validateLastName = () => {
                 maxLength={30}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                onBlur={validateFirstName}
+                onBlur={() => validateFirstName(firstName)}
                 color="teal"
                 className="text-text-1"
                 crossOrigin={undefined}
@@ -229,7 +229,7 @@ const validateLastName = () => {
                 maxLength={30}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                onBlur={validateLastName}
+                onBlur={() => validateLastName(lastName)}
                 color="teal"
                 className="text-text-1"
                 crossOrigin={undefined}
@@ -250,7 +250,7 @@ const validateLastName = () => {
               maxLength={50}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onBlur={validateEmail}
+              onBlur={() => validateEmail(email)}
               color="teal"
               className="text-text-1"
               crossOrigin={undefined}
@@ -272,7 +272,7 @@ const validateLastName = () => {
               onChange={(e) => {
                 setPassword(e.target.value);
               }}
-              onBlur={validatePassword}
+              onBlur={() => validatePassword(password)}
               color="teal"
               className="text-text-1"
               crossOrigin={undefined}
@@ -293,7 +293,7 @@ const validateLastName = () => {
               maxLength={50}
               value={repeatPassword}
               onChange={(e) => setRepeatPassword(e.target.value)}
-              onBlur={validateRepeatPassword}
+              onBlur={() => validateRepeatPassword(password, repeatPassword)}
               color="teal"
               className="text-text-1"
               crossOrigin={undefined}
@@ -309,7 +309,7 @@ const validateLastName = () => {
           <div className="my-3 w-full sm:w-1/2">
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <ThemeProvider theme={theme}>
-                <div onBlur={validateBirthdate}>
+                <div onBlur={() => validateBirthdate(birthdate)}>
                   <DatePicker
                     label="Birthdate"
                     format="DD-MM-YYYY"
@@ -370,7 +370,7 @@ const validateLastName = () => {
               <Checkbox
                 checked={checked}
                 onChange={() => setChecked(!checked)}
-                onBlur={validateCheck}
+                onBlur={() => validateCheck(checked)}
                 color="teal"
                 crossOrigin={undefined}
               ></Checkbox>

@@ -1,14 +1,8 @@
 // IMPORTS
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  signInWithEmailAndPassword,
-  setPersistence,
-  browserLocalPersistence,
-} from "firebase/auth";
-import { useAuth } from "contexts/AuthContext";
-import { Input, Button, Checkbox } from "@material-tailwind/react";
 import { auth } from "../firebase";
+import { useAuth } from "contexts/AuthContext";
+import { Input, Button, Checkbox, Typography } from "@material-tailwind/react";
 import logo from "../assets/label.png";
 import "index.css";
 
@@ -17,6 +11,10 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // STATES OF FIREBASE API ERRORS
+  const [apiError, setApiError] = useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = useState("");
+
   // SIGN IN
   const { login } = useAuth();
   const handleLogin = async (e) => {
@@ -24,7 +22,11 @@ const Login = () => {
     try {
       await login(email, password);
     } catch (error) {
-      console.error("Login failed", error);
+      const errorCode = error.code;
+      const errorMsg = error.msg;
+      setApiErrorMessage("Invalid email address or password.");
+      setApiError(true);
+      console.error(errorCode, errorMsg);
     }
   };
 
@@ -78,6 +80,15 @@ const Login = () => {
                 Forgot my password
               </a>
             </div>
+          </div>
+          <div className="items-center text-center">
+            <Typography
+              variant="small"
+              color="red"
+              className={`mb-3 ${apiError ? "" : "hidden"}`}
+            >
+              {apiErrorMessage}
+            </Typography>
           </div>
           <div className="my-3">
             <Button
