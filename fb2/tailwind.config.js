@@ -25,6 +25,7 @@ module.exports = withMT({
       },
       background: "rgb(var(--color-background) / <alpha-value>)", // white d: gray 900
       tooltip: "rgb(var(--color-tooltip) / <alpha-value>)", // blue gray 900
+      avatar: "rgb(var(--color-avatar) / <alpha-value>)", // blue gray 50
     },
     fontFamily: {
       sans: ["ui-sans-serif", "system-ui"],

@@ -18,6 +18,7 @@
     --color-text4: 120 144 156;
     --color-background: 255 255 255;
     --color-tooltip: 38 50 56;
+    --color-avatar: 236 239 241;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -36,18 +37,65 @@
   }
 }
 
+:-webkit-autofill,
+:-webkit-autofill:hover,
+:-webkit-autofill:focus,
+:-webkit-autofill:active {
+  -webkit-text-fill-color: rgb(var(--color-text1));
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+::selection {
+  background-color: rgb(var(--color-primary3));
+}
+
+input,
+textarea,
+select {
+  caret-color: rgb(var(--color-text1));
+}
+
 #root {
   background-color: rgb(var(--color-background));
 }
 
-::selection {
-  background-color: #80cbc4;
-}
-
-.dialog {
+.h-dialog {
   height: 60vh;
 }
 
-.chats-panel {
+.h-panel {
   height: calc(100vh - 4rem);
+}
+
+.EmojiPickerReact {
+  --epr-hover-bg-color: rgb(var(--color-primary4)) !important;
+  --epr-bg-color: rgb(var(--color-background)) !important;
+  --epr-category-label-bg-color: rgb(var(--color-background)) !important;
+  --epr-text-color: rgb(var(--color-text1)) !important;
+  --epr-search-input-bg-color: rgb(var(--color-secondary4)) !important;
+  --epr-search-input-placeholder-color: rgb(var(--color-secondary1)) !important;
+}
+
+.EmojiPickerReact .epr-search-container input.epr-search {
+  border: 1px solid rgb(var(--color-secondary2)) !important;
+}
+
+.EmojiPickerReact .epr-search-container input.epr-search:focus {
+  border: 2px solid rgb(var(--color-primary1)) !important;
+}
+
+.GifPickerReact {
+  --gpr-bg-color: rgb(var(--color-background)) !important;
+  --gpr-text-color: rgb(var(--color-text1)) !important;
+  --gpr-highlight-color: rgb(var(--color-primary1)) !important;
+  --gpr-search-input-bg-color: rgb(var(--color-secondary4)) !important;
+  --gpr-search-input-placeholder-color: rgb(var(--color-secondary1)) !important;
+}
+
+.GifPickerReact .gpr-search-container input.gpr-search {
+  border: 1px solid rgb(var(--color-secondary2)) !important;
+}
+
+.GifPickerReact .gpr-search-container input.gpr-search:focus {
+  border: 2px solid rgb(var(--color-primary1)) !important;
 }

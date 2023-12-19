@@ -99,7 +99,7 @@ const CustomFriendsMenu = () => {
               onClick={() => handleCategoryClick(id)}
               selected={isCategoryActive(id)}
               className={`hover:bg-secondary-4 active:bg-secondary-4 ${
-                activeCategory === id ? "!bg-primary-4" : ""
+                activeCategory === id ? "!bg-primary-1/20" : ""
               }`}
             >
               <ListItemPrefix>

@@ -65,15 +65,11 @@ const CustomNotificationMenu = () => {
                 size="lg"
                 className={`rounded-full ${
                   menuOpen
-                    ? "bg-primary-1/20 hover:bg-primary-1/30"
-                    : "bg-secondary-1/40 hover:bg-secondary-1/60"
+                    ? "bg-primary-1/20 hover:bg-primary-1/30 text-primary-1"
+                    : "bg-secondary-1/40 hover:bg-secondary-1/60 text-text-2"
                 }`}
               >
-                <BellIcon
-                  className={`h-7 w-7 ${
-                    menuOpen ? "text-primary-1" : "text-text-2"
-                  }`}
-                />
+                <BellIcon className="h-7 w-7" />
               </IconButton>
             </MenuHandler>
           </Tooltip>
@@ -89,7 +85,7 @@ const CustomNotificationMenu = () => {
                 <Avatar
                   alt=""
                   src={avatar}
-                  className="border border-secondary-1"
+                  className="border border-secondary-1 bg-avatar"
                 />
                 <div className="flex flex-col gap-1">
                   <Typography

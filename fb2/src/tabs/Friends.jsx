@@ -1,13 +1,13 @@
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Input } from "@material-tailwind/react";
-import CustomFriends from "components/CustomFriends";
-import CustomFriendsMenu from "components/CustomFriendsMenu";
+import CustomFriends from "components/friends/CustomFriends";
+import CustomFriendsMenu from "components/friends/CustomFriendsMenu";
 import React from "react";
 
 function Friends() {
   return (
-    <div className="wrapper flex bg-background">
-      <div className="chats-panel flex flex-col w-1/4 border-r border-secondary-3">
+    <div className="wrapper flex">
+      <div className="h-panel flex flex-col w-1/4 border-r border-secondary-3">
         <div className="flex flex-col p-4 pb-2 gap-4">
           <h1 className="text-2xl text-text-1 font-bold">Friends</h1>
           <Input
@@ -15,7 +15,7 @@ function Friends() {
             placeholder="Search for friends"
             maxLength={50}
             color="teal"
-            className="!border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
+            className="text-text-1 !border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
             labelProps={{
               className: "hidden",
             }}

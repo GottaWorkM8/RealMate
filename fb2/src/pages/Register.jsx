@@ -6,7 +6,9 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, db, storage } from "../firebase";
+import { ref, getDownloadURL } from "firebase/storage";
+import { doc, setDoc, collection } from "firebase/firestore";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -23,6 +25,7 @@ import {
 import { DialogTitle } from "@mui/material";
 import logo from "../assets/label.png";
 import "index.css";
+import { useAuth } from "contexts/AuthContext";
 
 // REGISTER COMPONENT
 const Register = () => {
@@ -72,20 +75,20 @@ const Register = () => {
 
   // FUNCTIONS FOR INPUT VALIDATION
   const validateFirstName = () => {
-    const hasValidCharacters = /^[a-zA-Z]+$/;
-    const error = firstName.length < 1 || !hasValidCharacters.test(firstName);
+  const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
+  const error = firstName.length < 1 || !hasValidCharacters.test(firstName);
 
-    setFirstNameError(error);
-    return !error;
-  };
+  setFirstNameError(error);
+  return !error;
+};
 
-  const validateLastName = () => {
-    const hasValidCharacters = /^[a-zA-Z]+$/;
-    const error = lastName.length < 1 || !hasValidCharacters.test(lastName);
+const validateLastName = () => {
+  const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$/;
+  const error = lastName.length < 1 || !hasValidCharacters.test(lastName);
 
-    setLastNameError(error);
-    return !error;
-  };
+  setLastNameError(error);
+  return !error;
+};
 
   const validateEmail = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -161,62 +164,45 @@ const Register = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState("");
 
   // SIGN UP
-  const register = async (e) => {
+  const { register } = useAuth();
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setApiError(false);
     if (formValid()) {
-      await createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          const name = firstName;
-          updateProfile(user, {
-            displayName: name,
-          })
-            .then(() => {
-              // Profile updated!
-              // ...
-            })
-            .catch((error) => {
-              // An error occurred
-              // ...
-            });
-          sendEmailVerification(user).then(() => {
-            // Email verification sent!
-          });
-          console.log(user);
-          navigate("/login");
-        })
-        .catch((error) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          if (errorCode === "auth/email-already-in-use") {
-            setApiErrorMessage(
-              "Use another email address, account with this address already exists."
-            );
-            setApiError(true);
-          }
-          console.log(errorCode, errorMessage);
-        });
-    }
+      try {
+        await register(firstName, lastName, email, password, birthdate);
+      } catch (error) {
+        const errorCode = error.code;
+        const errorMsg = error.msg;
+        if (errorCode === "auth/email-already-in-use") {
+          setApiErrorMessage(
+            "Use another email address, an account with this address already exists."
+          );
+          setApiError(true);
+        }
+        console.error(errorCode, errorMsg);
+      }
+    } else console.error("User registration failed: Incorrect input data");
   };
 
   return (
-    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary-4">
-      <div className="mt-3 mb-9 mx-6">
-        <img className="-mb-3 mx-auto scale-50" src={logo} alt="" />
-        <p className="text-text-3 ">Freedom and connectivity</p>
+    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-secondary-4">
+      <div className="flex flex-col mt-3 mb-9 mx-6">
+        <img className="scale-50" src={logo} alt="" />
+        <p className="-mt-3 text-text-3 ">Freedom and connectivity</p>
       </div>
-      <div className="max-w-xl p-6 text-start bg-background rounded-xl shadow-lg">
+      <div className="w-[20rem] sm:w-[30rem] p-6 text-start bg-background rounded-xl shadow-lg">
         <div className="mb-6 px-3 space-y-1">
-          <h1 className="text-3xl text-center text-text-1 font-medium">
+          <h1 className="text-3xl text-center text-text-2 font-medium">
             Sign Up
           </h1>
           <p className="text-center text-text-3 text-sm">
             Provide necessary data to register
           </p>
         </div>
-        <form onSubmit={register} autoComplete="false" noValidate>
-          <div className="my-3 flex flex-row space-x-3">
-            <div className="flex flex-col w-1/2">
+        <form onSubmit={handleRegister} autoComplete="false" noValidate>
+          <div className="my-3 flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col w-full sm:w-1/2">
               <Input
                 type="text"
                 label="First name"
@@ -225,6 +211,7 @@ const Register = () => {
                 onChange={(e) => setFirstName(e.target.value)}
                 onBlur={validateFirstName}
                 color="teal"
+                className="text-text-1"
                 crossOrigin={undefined}
               />
               <Typography
@@ -235,7 +222,7 @@ const Register = () => {
                 Use at least one letter, no numbers or special characters.
               </Typography>
             </div>
-            <div className="flex flex-col w-1/2">
+            <div className="flex flex-col w-full sm:w-1/2">
               <Input
                 type="text"
                 label="Last name"
@@ -244,6 +231,7 @@ const Register = () => {
                 onChange={(e) => setLastName(e.target.value)}
                 onBlur={validateLastName}
                 color="teal"
+                className="text-text-1"
                 crossOrigin={undefined}
               />
               <Typography
@@ -264,6 +252,7 @@ const Register = () => {
               onChange={(e) => setEmail(e.target.value)}
               onBlur={validateEmail}
               color="teal"
+              className="text-text-1"
               crossOrigin={undefined}
             />
             <Typography
@@ -285,6 +274,7 @@ const Register = () => {
               }}
               onBlur={validatePassword}
               color="teal"
+              className="text-text-1"
               crossOrigin={undefined}
             />
             <Typography
@@ -305,6 +295,7 @@ const Register = () => {
               onChange={(e) => setRepeatPassword(e.target.value)}
               onBlur={validateRepeatPassword}
               color="teal"
+              className="text-text-1"
               crossOrigin={undefined}
             />
             <Typography
@@ -315,7 +306,7 @@ const Register = () => {
               Repeat the password above.
             </Typography>
           </div>
-          <div className="my-3">
+          <div className="my-3 w-full sm:w-1/2">
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <ThemeProvider theme={theme}>
                 <div onBlur={validateBirthdate}>
@@ -393,9 +384,15 @@ const Register = () => {
                   >
                     Terms & Conditions
                   </button>
-                  <Dialog open={open} handler={handleOpen}>
-                    <DialogHeader>RealMate Terms & Conditions</DialogHeader>
-                    <DialogBody className="dialog overflow-auto">
+                  <Dialog
+                    open={open}
+                    handler={handleOpen}
+                    className="bg-background"
+                  >
+                    <DialogHeader className="text-text-2">
+                      RealMate Terms & Conditions
+                    </DialogHeader>
+                    <DialogBody className="h-dialog overflow-auto text-text-3">
                       Last Updated: [01-12-2023]
                       <br />
                       <br />
@@ -405,7 +402,9 @@ const Register = () => {
                       using RealMate, you agree to be bound by these Terms. If
                       you do not agree to these Terms, please refrain from using
                       the App.
-                      <DialogTitle>1. Account Registration</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        1. Account Registration
+                      </DialogTitle>
                       1.1 To use RealMate, you must create an account by
                       providing accurate and complete information, including
                       your first name, last name, email address, date of birth,
@@ -413,7 +412,9 @@ const Register = () => {
                       1.2 You are responsible for maintaining the
                       confidentiality of your account credentials and for all
                       activities that occur under your account.
-                      <DialogTitle>2. Data Collection and Usage</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        2. Data Collection and Usage
+                      </DialogTitle>
                       2.1 RealMate collects and stores user data, including but
                       not limited to first name, last name, email address,
                       password, date of birth, personal pictures, and sent
@@ -424,7 +425,9 @@ const Register = () => {
                       2.3 RealMate may use cookies and sessions to enhance user
                       experience, analyze usage patterns, and improve the
                       overall functionality of the App.
-                      <DialogTitle>3. Privacy and Security</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        3. Privacy and Security
+                      </DialogTitle>
                       3.1 RealMate is committed to protecting your privacy. Our
                       Privacy Policy outlines how your data is collected, used,
                       and secured. By using RealMate, you acknowledge and agree
@@ -432,7 +435,9 @@ const Register = () => {
                       3.2 You are responsible for maintaining the security of
                       your account. Notify RealMate immediately of any
                       unauthorized access or use of your account.
-                      <DialogTitle>4. Content and Conduct</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        4. Content and Conduct
+                      </DialogTitle>
                       4.1 You are solely responsible for the content you post on
                       RealMate. Do not share content that violates applicable
                       laws, infringes on intellectual property rights, or is
@@ -440,13 +445,17 @@ const Register = () => {
                       4.2 RealMate has the right to monitor and moderate
                       content. Inappropriate content may be removed, and users
                       may be suspended or banned at our discretion.
-                      <DialogTitle>5. Termination</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        5. Termination
+                      </DialogTitle>
                       5.1 RealMate reserves the right to suspend or terminate
                       your account at any time, for any reason, without notice.{" "}
                       <br />
                       5.2 Upon termination, your access to the App and any
                       associated data may be permanently deleted.
-                      <DialogTitle>6. Updates and Changes</DialogTitle>
+                      <DialogTitle className="text-text-2">
+                        6. Updates and Changes
+                      </DialogTitle>
                       6.1 RealMate may update these Terms at any time. By
                       continuing to use the App after changes are posted, you
                       agree to the updated Terms. <br />

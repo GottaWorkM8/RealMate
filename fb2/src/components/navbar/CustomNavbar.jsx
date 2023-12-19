@@ -18,7 +18,7 @@ import {
   BellIcon as BellIconSolid,
 } from "@heroicons/react/24/solid";
 import Headroom from "react-headroom";
-import logo from "../assets/icon-circle.png";
+import logo from "../../assets/icon-circle.png";
 import CustomNotificationMenu from "./CustomNotificationMenu";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -112,7 +112,7 @@ const CustomNavbar = () => {
             placeholder="Search"
             maxLength={50}
             color="teal"
-            className="!border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
+            className="text-text-1 !border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
             labelProps={{
               className: "hidden",
             }}

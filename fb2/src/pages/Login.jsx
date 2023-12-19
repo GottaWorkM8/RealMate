@@ -6,52 +6,37 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from "firebase/auth";
+import { useAuth } from "contexts/AuthContext";
 import { Input, Button, Checkbox } from "@material-tailwind/react";
 import { auth } from "../firebase";
 import logo from "../assets/label.png";
 import "index.css";
 
 const Login = () => {
-  // NAVIGATION TO OTHER PAGES
-  const navigate = useNavigate();
-
   // STATES OF INPUTS
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   // SIGN IN
-  const login = (e) => {
+  const { login } = useAuth();
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        signInWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
-            const user = userCredential.user;
-            navigate("/");
-            console.log(user);
-          })
-          .catch((error) => {
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            console.log(errorCode, errorMessage);
-          });
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorCode, errorMessage);
-      });
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error("Login failed", error);
+    }
   };
 
   return (
-    <div className="flex flex-col w-full items-center text-center p-3 pb-12 bg-secondary-4">
-      <div className="mt-3 mb-9 mx-6">
-        <img className="-mb-3 mx-auto scale-50" src={logo} alt="" />
-        <p className="text-text-3">Freedom and connectivity</p>
+    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-secondary-4">
+      <div className="flex flex-col mt-3 mb-9 mx-6">
+        <img className="scale-50" src={logo} alt="" />
+        <p className="-mt-3 text-text-3">Freedom and connectivity</p>
       </div>
-      <div className="max-w-xl p-6 text-start bg-background rounded-xl shadow-lg">
+      <div className="w-[20rem] sm:w-[30rem] p-6 text-start bg-background rounded-xl shadow-lg">
         <div className="mb-6 px-3 space-y-1">
-          <h1 className="text-3xl text-center text-text-1 font-medium">
+          <h1 className="text-3xl text-center text-text-2 font-medium">
             Sign In
           </h1>
           <p className="text-center text-text-3 text-sm">
@@ -67,6 +52,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               color="teal"
+              className="text-text-1"
               crossOrigin={undefined}
             />
           </div>
@@ -78,6 +64,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               color="teal"
+              className="text-text-1"
               crossOrigin={undefined}
             />
           </div>
@@ -95,7 +82,7 @@ const Login = () => {
           <div className="my-3">
             <Button
               type="submit"
-              onClick={login}
+              onClick={handleLogin}
               size="lg"
               color="teal"
               className="w-full"

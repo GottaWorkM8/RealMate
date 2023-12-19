@@ -1,46 +1,28 @@
 // IMPORTS
-import React, { useState, useEffect } from "react";
+import React, { useContext } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
 import Register from "pages/Register";
 import Login from "pages/Login";
-import CustomNavbar from "components/CustomNavbar";
+import CustomNavbar from "components/navbar/CustomNavbar";
 import Home from "tabs/Home";
 import Chats from "tabs/Chats";
 import Friends from "tabs/Friends";
 import Groups from "tabs/Groups";
 import Notifications from "tabs/Notifications";
+import PrivateRoute from "components/PrivateRoute";
 import "index.css";
 
 const App = () => {
-  // NAVIGATION TO OTHER PAGES
-  const navigate = useNavigate();
-
-  // USER AUTH STATE OBSERVER
-  const auth = getAuth();
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // User is signed in, see docs for a list of available properties
-      // https://firebase.google.com/docs/reference/js/auth.user
-      const uid = user.uid;
-      // ...
-    } else {
-      // User is signed out
-      // ...
-    }
-  });
-
   return (
     <div className="app h-screen">
       <Routes>
         <Route
           path="/"
           element={
-            <>
+            <PrivateRoute>
               <CustomNavbar />
               <Outlet />
-            </>
+            </PrivateRoute>
           }
         >
           <Route index element={<Home />} />
