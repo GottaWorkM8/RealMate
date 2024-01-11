@@ -1,6 +1,5 @@
 // IMPORTS
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -36,9 +35,6 @@ const Register = () => {
     },
   });
 
-  // NAVIGATION TO OTHER PAGES
-  const navigate = useNavigate();
-
   // STATES OF INPUTS & DIALOGS
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -48,6 +44,9 @@ const Register = () => {
   const [birthdate, setBirthdate] = useState(null);
   const [checked, setChecked] = useState(false);
   const [open, setOpen] = useState(false);
+
+  // STATE OF THE BUTTON
+  const [loading, setLoading] = useState(false);
 
   // STATES OF INPUT ERRORS
   const [firstNameError, setFirstNameError] = useState(false);
@@ -158,6 +157,7 @@ const Register = () => {
   // SIGN UP
   const { register } = useAuth();
   const handleRegister = async (e) => {
+    setLoading(true);
     e.preventDefault();
     setApiError(false);
     const fName = firstName;
@@ -183,6 +183,7 @@ const Register = () => {
         console.error(errorCode, errorMsg);
       }
     } else console.error("User registration failed: Incorrect input data");
+    setLoading(false);
   };
 
   return (
@@ -212,7 +213,6 @@ const Register = () => {
                 onBlur={() => validateFirstName(firstName)}
                 color="teal"
                 className="text-text-1"
-                crossOrigin={undefined}
               />
               <Typography
                 variant="small"
@@ -232,7 +232,6 @@ const Register = () => {
                 onBlur={() => validateLastName(lastName)}
                 color="teal"
                 className="text-text-1"
-                crossOrigin={undefined}
               />
               <Typography
                 variant="small"
@@ -253,7 +252,6 @@ const Register = () => {
               onBlur={() => validateEmail(email)}
               color="teal"
               className="text-text-1"
-              crossOrigin={undefined}
             />
             <Typography
               variant="small"
@@ -275,7 +273,6 @@ const Register = () => {
               onBlur={() => validatePassword(password)}
               color="teal"
               className="text-text-1"
-              crossOrigin={undefined}
             />
             <Typography
               variant="small"
@@ -296,7 +293,6 @@ const Register = () => {
               onBlur={() => validateRepeatPassword(password, repeatPassword)}
               color="teal"
               className="text-text-1"
-              crossOrigin={undefined}
             />
             <Typography
               variant="small"
@@ -372,8 +368,7 @@ const Register = () => {
                 onChange={() => setChecked(!checked)}
                 onBlur={() => validateCheck(checked)}
                 color="teal"
-                crossOrigin={undefined}
-              ></Checkbox>
+              />
               <div className="flex flex-row items-center">
                 <p className="text-text-3">
                   I read and agree to{" "}
@@ -472,7 +467,7 @@ const Register = () => {
                         Cancel
                       </Button>
                       <Button
-                        variant="gradient"
+                        variant="text"
                         color="teal"
                         onClick={handleConfirm}
                       >
@@ -501,8 +496,14 @@ const Register = () => {
             </Typography>
           </div>
           <div className="my-3">
-            <Button type="submit" size="lg" color="teal" className="w-full">
-              Create an account
+            <Button
+              type="submit"
+              size="lg"
+              loading={loading}
+              color="teal"
+              className="w-full justify-center"
+            >
+              {loading ? "Creating an account" : "Create an account"}
             </Button>
           </div>
         </form>

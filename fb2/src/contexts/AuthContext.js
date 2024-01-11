@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth, db, storage } from "../firebase";
+import { auth, db, storage } from "../api/firebase";
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
@@ -15,17 +15,30 @@ import { doc, setDoc } from "firebase/firestore";
 
 const AuthContext = React.createContext(undefined);
 
-export function useAuth() {
+export const useAuth = () => {
   return useContext(AuthContext);
-}
+};
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   // NAVIGATION TO OTHER PAGES
   const navigate = useNavigate();
 
   // STATES
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // USER SEARCH KEYWORDS
+  const generateKeywords = (lastName, fullName) => {
+    const lName = lastName.toLowerCase();
+    const fName = fullName.toLowerCase();
+    const keywords = [];
+    for (let i = 1; i <= lName.length; i++)
+      keywords.push(lName.substring(0, i));
+    for (let i = 1; i <= fName.length; i++)
+      keywords.push(fName.substring(0, i));
+
+    return keywords;
+  };
 
   // SIGN UP
   const register = async (firstName, lastName, email, password, birthdate) => {
@@ -39,10 +52,10 @@ export function AuthProvider({ children }) {
       console.log("User account created");
 
       if (userCredential) {
-        const fullName = firstName + " " + lastName;
-        const fileRef = ref(storage, "avatars/avatar.png");
         const user = userCredential.user;
+        const fullName = firstName + " " + lastName;
 
+        const fileRef = ref(storage, "avatars/user.png");
         const avatarDownloadURL = await getDownloadURL(fileRef);
         await updateProfile(user, {
           displayName: fullName,
@@ -50,25 +63,24 @@ export function AuthProvider({ children }) {
         });
         console.log("User profile updated");
 
-        const birthday = new Date(birthdate).toDateString();
-        const today = new Date().toDateString();
+        const keywords = generateKeywords(lastName, fullName);
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
           displayName: fullName,
           firstName: firstName,
           lastName: lastName,
           email: email,
-          birthdate: birthday,
-          creationDate: today,
-          avatar: avatarDownloadURL,
+          birthdate: new Date(birthdate),
+          creationDate: new Date(),
+          avatarURL: avatarDownloadURL,
+          keywords: keywords,
         });
         console.log("Document added with ID: ", user.uid);
 
-        await sendEmailVerification(user);
-        console.log("Email Verification sent");
+        // await sendEmailVerification(user);
+        // console.log("Email Verification sent");
 
         console.log(user);
-        navigate("/login");
       }
     } catch (error) {
       throw error;
@@ -88,7 +100,6 @@ export function AuthProvider({ children }) {
 
       if (userCredential) {
         const user = userCredential.user;
-        navigate("/");
         console.log(user);
       }
     } catch (error) {
@@ -129,4 +140,4 @@ export function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+};

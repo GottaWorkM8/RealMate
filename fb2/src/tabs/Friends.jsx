@@ -15,7 +15,7 @@ function Friends() {
             placeholder="Search for friends"
             maxLength={50}
             color="teal"
-            className="text-text-1 !border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
+            className="text-text-1 !border-secondary-2 placeholder:opacity-100 placeholder:text-text-4 focus:!border-primary-1"
             labelProps={{
               className: "hidden",
             }}

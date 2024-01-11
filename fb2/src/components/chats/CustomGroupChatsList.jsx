@@ -11,7 +11,7 @@ import {
 } from "@material-tailwind/react";
 import { PaperAirplaneIcon } from "@heroicons/react/24/solid";
 
-const CustomChatsList = ({ chatsList, activeChatId }) => {
+const CustomGroupChatsList = ({ groupChatsList, activeChatId }) => {
   // CURRENT USER
   const { currentUser } = useAuth();
 
@@ -26,7 +26,7 @@ const CustomChatsList = ({ chatsList, activeChatId }) => {
   return (
     <Card className="shadow-none rounded-none bg-background">
       <List>
-        {chatsList.map(
+        {groupChatsList.map(
           ({
             id,
             docRef,
@@ -34,7 +34,6 @@ const CustomChatsList = ({ chatsList, activeChatId }) => {
             displayName,
             members,
             userIndex,
-            partnerIndex,
             creationDate,
             lastMsg,
           }) => {
@@ -85,4 +84,4 @@ const CustomChatsList = ({ chatsList, activeChatId }) => {
   );
 };
 
-export default CustomChatsList;
+export default CustomGroupChatsList;

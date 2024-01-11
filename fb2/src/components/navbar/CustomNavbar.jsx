@@ -1,13 +1,13 @@
+// @ts-nocheck
 // IMPORTS
 import React, { useState, useEffect } from "react";
-import { IconButton, Input, Navbar, Tooltip } from "@material-tailwind/react";
+import { IconButton, Navbar, Tooltip } from "@material-tailwind/react";
 import CustomProfileMenu from "./CustomProfileMenu";
 import {
   HomeIcon,
   ChatBubbleLeftRightIcon,
   UsersIcon,
   UserGroupIcon,
-  MagnifyingGlassIcon,
   BellIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -21,6 +21,9 @@ import Headroom from "react-headroom";
 import logo from "../../assets/icon-circle.png";
 import CustomNotificationMenu from "./CustomNotificationMenu";
 import { useNavigate, useLocation } from "react-router-dom";
+import CustomSearchInput from "components/CustomSearchInput";
+import { db } from "../../api/firebase";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
 
 const CustomNavbar = () => {
   // NAVIGATION TO OTHER PAGES
@@ -34,7 +37,6 @@ const CustomNavbar = () => {
     const handleResize = () => {
       setDesktopMode(window.innerWidth >= 720);
     };
-
     handleResize();
     window.addEventListener("resize", handleResize);
 
@@ -69,7 +71,6 @@ const CustomNavbar = () => {
 
   useEffect(() => {
     const path = location.pathname;
-
     switch (path) {
       case "/":
         setActiveTab(0);
@@ -92,6 +93,41 @@ const CustomNavbar = () => {
     }
   }, [location.pathname]);
 
+  // SEARCHING FOR USERS AND GROUPS
+  const [searchedUsers, setSearchedUsers] = useState([]);
+  const [searchedGroups, setSearchedGroups] = useState([]);
+
+  const handleSearch = async (term) => {
+    const lcTerm = term.toLowerCase();
+    if (lcTerm.length > 0) {
+      // Search for users by keywords
+      const usersQuery = query(
+        collection(db, "users"),
+        where("keywords", "array-contains", lcTerm),
+        limit(3)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+      const users = usersSnapshot.docs.map((doc) => doc.data());
+      setSearchedUsers(users);
+      // Search for groups by keywords
+      // const groupsQuery = query(
+      //   collection(db, "groups"),
+      //   where("keywords", "array-contains", lcTerm),
+      //   limit(2)
+      // );
+      // const groupsSnapshot = await getDocs(groupsQuery);
+      // const groups = groupsSnapshot.docs.map((doc) => doc.data());
+      // setSearchedGroups(groups);
+    } else {
+      setSearchedUsers([]);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Searched users: " + searchedUsers.length);
+    // console.log("Searched groups: " + searchedGroups.length);
+  }, [searchedUsers, searchedGroups]);
+
   return (
     <Headroom pin={desktopMode}>
       <Navbar
@@ -107,84 +143,66 @@ const CustomNavbar = () => {
           >
             <img className="h-full" src={logo} alt="" />
           </button>
-          <Input
-            type="text"
+          <CustomSearchInput
             placeholder="Search"
-            maxLength={50}
-            color="teal"
-            className="text-text-1 !border-secondary-2 placeholder:text-text-4 focus:!border-primary-1"
-            labelProps={{
-              className: "hidden",
-            }}
-            containerProps={{
-              className: "min-w-[6rem] max-w-[15rem] bg-secondary-4 rounded-lg",
-            }}
-            icon={<MagnifyingGlassIcon />}
-            crossOrigin={undefined}
+            onSearch={handleSearch}
+            results={searchedUsers}
           />
         </div>
         <div className="hidden md:flex items-center w-1/3 justify-center space-x-2">
           <Tooltip content="Home" className="bg-tooltip/80">
             <IconButton
-              variant="outlined"
-              color={activeTab === 0 ? "teal" : "blue-gray"}
               onClick={() => handleTabClick(0)}
-              className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-                activeTab === 0 ? "ring focus:ring ring-primary-2" : ""
-              } max-w-none max-h-none w-full h-full`}
+              className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+                activeTab === 0 ? "ring ring-primary-1" : ""
+              } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 0 ? (
-                <HomeIconSolid className="h-7 w-7" />
+                <HomeIconSolid className="h-7 w-7 text-primary-1" />
               ) : (
-                <HomeIcon className="h-7 w-7" />
+                <HomeIcon className="h-7 w-7 text-secondary-1" />
               )}
             </IconButton>
           </Tooltip>
           <Tooltip content="Chats" className="bg-tooltip/80">
             <IconButton
-              variant="outlined"
-              color={activeTab === 1 ? "teal" : "blue-gray"}
               onClick={() => handleTabClick(1)}
-              className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-                activeTab === 1 ? "ring focus:ring ring-primary-2" : ""
-              } max-w-none max-h-none w-full h-full`}
+              className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+                activeTab === 1 ? "ring ring-primary-1" : ""
+              } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 1 ? (
-                <ChatBubbleLeftRightIconSolid className="h-7 w-7" />
+                <ChatBubbleLeftRightIconSolid className="h-7 w-7 text-primary-1" />
               ) : (
-                <ChatBubbleLeftRightIcon className="h-7 w-7" />
+                <ChatBubbleLeftRightIcon className="h-7 w-7 text-secondary-1" />
               )}
             </IconButton>
           </Tooltip>
           <Tooltip content="Friends" className="bg-tooltip/80">
             <IconButton
-              variant="outlined"
-              color={activeTab === 2 ? "teal" : "blue-gray"}
               onClick={() => handleTabClick(2)}
-              className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-                activeTab === 2 ? "ring focus:ring ring-primary-2" : ""
-              } max-w-none max-h-none w-full h-full`}
+              className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+                activeTab === 2 ? "ring ring-primary-1" : ""
+              } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 2 ? (
-                <UsersIconSolid className="h-7 w-7" />
+                <UsersIconSolid className="h-7 w-7 text-primary-1" />
               ) : (
-                <UsersIcon className="h-7 w-7" />
+                <UsersIcon className="h-7 w-7 text-secondary-1" />
               )}
             </IconButton>
           </Tooltip>
           <Tooltip content="Groups" className="bg-tooltip/80">
             <IconButton
-              variant="outlined"
-              color={activeTab === 3 ? "teal" : "blue-gray"}
               onClick={() => handleTabClick(3)}
-              className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-                activeTab === 3 ? "ring focus:ring ring-primary-2" : ""
-              } max-w-none max-h-none w-full h-full`}
+              className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+                activeTab === 3 ? "ring ring-primary-1" : ""
+              } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 3 ? (
-                <UserGroupIconSolid className="h-7 w-7" />
+                <UserGroupIconSolid className="h-7 w-7 text-primary-1" />
               ) : (
-                <UserGroupIcon className="h-7 w-7" />
+                <UserGroupIcon className="h-7 w-7 text-secondary-1" />
               )}
             </IconButton>
           </Tooltip>
@@ -200,73 +218,63 @@ const CustomNavbar = () => {
       >
         <div className="flex items-center w-full justify-center space-x-2">
           <IconButton
-            variant="outlined"
-            color={activeTab === 0 ? "teal" : "blue-gray"}
             onClick={() => handleTabClick(0)}
-            className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-              activeTab === 0 ? "ring focus:ring ring-primary-2" : ""
-            } max-w-none max-h-none w-full h-full`}
+            className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+              activeTab === 0 ? "ring ring-primary-1" : ""
+            } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 0 ? (
-              <HomeIconSolid className="h-7 w-7" />
+              <HomeIconSolid className="h-7 w-7 text-primary-1" />
             ) : (
-              <HomeIcon className="h-7 w-7" />
+              <HomeIcon className="h-7 w-7 text-secondary-1" />
             )}
           </IconButton>
           <IconButton
-            variant="outlined"
-            color={activeTab === 1 ? "teal" : "blue-gray"}
             onClick={() => handleTabClick(1)}
-            className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-              activeTab === 1 ? "ring focus:ring ring-primary-2" : ""
-            } max-w-none max-h-none w-full h-full`}
+            className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+              activeTab === 1 ? "ring ring-primary-1" : ""
+            } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 1 ? (
-              <ChatBubbleLeftRightIconSolid className="h-7 w-7" />
+              <ChatBubbleLeftRightIconSolid className="h-7 w-7 text-primary-1" />
             ) : (
-              <ChatBubbleLeftRightIcon className="h-7 w-7" />
+              <ChatBubbleLeftRightIcon className="h-7 w-7 text-secondary-1" />
             )}
           </IconButton>
           <IconButton
-            variant="outlined"
-            color={activeTab === 2 ? "teal" : "blue-gray"}
             onClick={() => handleTabClick(2)}
-            className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-              activeTab === 2 ? "ring focus:ring ring-primary-2" : ""
-            } max-w-none max-h-none w-full h-full`}
+            className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+              activeTab === 2 ? "ring ring-primary-1" : ""
+            } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 2 ? (
-              <UsersIconSolid className="h-7 w-7" />
+              <UsersIconSolid className="h-7 w-7 text-primary-1" />
             ) : (
-              <UsersIcon className="h-7 w-7" />
+              <UsersIcon className="h-7 w-7 text-secondary-1" />
             )}
           </IconButton>
           <IconButton
-            variant="outlined"
-            color={activeTab === 3 ? "teal" : "blue-gray"}
             onClick={() => handleTabClick(3)}
-            className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-              activeTab === 3 ? "ring focus:ring ring-primary-2" : ""
-            } max-w-none max-h-none w-full h-full`}
+            className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+              activeTab === 3 ? "ring ring-primary-1" : ""
+            } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 3 ? (
-              <UserGroupIconSolid className="h-7 w-7" />
+              <UserGroupIconSolid className="h-7 w-7 text-primary-1" />
             ) : (
-              <UserGroupIcon className="h-7 w-7" />
+              <UserGroupIcon className="h-7 w-7 text-secondary-1" />
             )}
           </IconButton>
           <IconButton
-            variant="outlined"
-            color={activeTab === 4 ? "teal" : "blue-gray"}
             onClick={() => handleTabClick(4)}
-            className={`bg-transparent hover:bg-secondary-4 ring-0 focus:ring-0 ${
-              activeTab === 4 ? "ring focus:ring ring-primary-2" : ""
-            } max-w-none max-h-none w-full h-full`}
+            className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
+              activeTab === 4 ? "ring ring-primary-1" : ""
+            } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 4 ? (
-              <BellIconSolid className="h-7 w-7" />
+              <BellIconSolid className="h-7 w-7 text-primary-1" />
             ) : (
-              <BellIcon className="h-7 w-7" />
+              <BellIcon className="h-7 w-7 text-secondary-1" />
             )}
           </IconButton>
         </div>

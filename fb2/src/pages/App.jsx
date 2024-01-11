@@ -1,5 +1,5 @@
 // IMPORTS
-import React, { useContext } from "react";
+import React from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Register from "pages/Register";
 import Login from "pages/Login";
@@ -9,8 +9,10 @@ import Chats from "tabs/Chats";
 import Friends from "tabs/Friends";
 import Groups from "tabs/Groups";
 import Notifications from "tabs/Notifications";
-import PrivateRoute from "components/PrivateRoute";
+import PrivateRoute from "routes/PrivateRoute";
 import "index.css";
+import PublicRoute from "routes/PublicRoute";
+import Profiles from "tabs/UserProfiles";
 
 const App = () => {
   return (
@@ -33,9 +35,25 @@ const App = () => {
           <Route path="groups" element={<Groups />} />
           <Route path="groups/:category" element={<Groups />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="profiles/users/:userId" element={<Profiles />} />
+          <Route path="profiles/groups/:groupId" element={<Profiles />} />
         </Route>
-        <Route path="register" element={<Register />} />
-        <Route path="login" element={<Login />} />
+        <Route
+          path="register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
       </Routes>
     </div>
   );

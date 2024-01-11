@@ -1,6 +1,5 @@
 // IMPORTS
 import React, { useState } from "react";
-import { auth } from "../firebase";
 import { useAuth } from "contexts/AuthContext";
 import { Input, Button, Checkbox, Typography } from "@material-tailwind/react";
 import logo from "../assets/label.png";
@@ -11,6 +10,9 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // STATE OF THE BUTTON
+  const [loading, setLoading] = useState(false);
+
   // STATES OF FIREBASE API ERRORS
   const [apiError, setApiError] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState("");
@@ -18,6 +20,7 @@ const Login = () => {
   // SIGN IN
   const { login } = useAuth();
   const handleLogin = async (e) => {
+    setLoading(true);
     e.preventDefault();
     try {
       await login(email, password);
@@ -28,6 +31,7 @@ const Login = () => {
       setApiError(true);
       console.error(errorCode, errorMsg);
     }
+    setLoading(false);
   };
 
   return (
@@ -45,7 +49,7 @@ const Login = () => {
             Login using your email address and password
           </p>
         </div>
-        <form noValidate>
+        <form onSubmit={handleLogin} noValidate>
           <div className="my-3">
             <Input
               type="email"
@@ -93,12 +97,12 @@ const Login = () => {
           <div className="my-3">
             <Button
               type="submit"
-              onClick={handleLogin}
               size="lg"
+              loading={loading}
               color="teal"
-              className="w-full"
+              className="w-full justify-center"
             >
-              Login
+              {loading ? "Logging in" : "Login"}
             </Button>
           </div>
         </form>

@@ -34,19 +34,21 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import EmojiPicker, { EmojiStyle } from "emoji-picker-react";
 import GifPicker from "gif-picker-react";
-import CustomChatMsg from "./CustomChatMsg";
-import PropTypes from "prop-types";
 import { useAuth } from "contexts/AuthContext";
 import {
   addDoc,
   collection,
+  doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db } from "../../api/firebase";
+import CustomChatMsgGroup from "./CustomChatMsgGroup";
 
-const CustomChat = (props) => {
+const CustomChat = ({ chatAvatarURL, chatDisplayName, chatDocRef }) => {
   // CURRENT USER
   const { currentUser } = useAuth();
 
@@ -55,21 +57,22 @@ const CustomChat = (props) => {
   const location = useLocation();
 
   // HANDLING ACTIVE CHAT
-  const [activeChatId, setActiveChat] = useState(null);
+  const [activeChatId, setActiveChatId] = useState(null);
 
   useEffect(() => {
     const path = location.pathname;
     const match = path.match(/^\/chats\/(.+)$/);
     if (match) {
       const chatId = match[1];
-      setActiveChat(chatId);
+      setActiveChatId(chatId);
     } else {
-      setActiveChat(null);
+      setActiveChatId(null);
     }
-  }, [location.pathname]);
+  }, []);
 
   // HANDLING ACTIVE CHAT ACCORDIONS
   const [openAccordion, setOpenAccordion] = React.useState(0);
+
   const handleOpenAccordion = (accordionId) => {
     setOpenAccordion(openAccordion === accordionId ? 0 : accordionId);
   };
@@ -82,10 +85,7 @@ const CustomChat = (props) => {
 
   // HANDLING ACTIVE CHAT INPUT
   const textareaRef = useRef(null);
-  const handleTextareaHeight = () => {
-    textareaRef.current.style.height = "inherit";
-    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-  };
+
   const handleChatAreaClick = () => {
     textareaRef.current.focus();
   };
@@ -95,7 +95,7 @@ const CustomChat = (props) => {
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [activeChatId]);
+  }, []);
 
   // HANDLING CHAT SCROLLING
   const chatAreaRef = useRef(null);
@@ -104,24 +104,36 @@ const CustomChat = (props) => {
     if (chatAreaRef.current) {
       chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
     }
-  }, [activeChatId]);
+  }, []);
 
   // SENDING MESSAGES
   const [text, setText] = useState("");
+
   const handleText = ({ target }) => {
     setText(target.value);
   };
   const sendMessage = async () => {
     if (text.trim() === "") return;
+    const senderId = currentUser.uid;
+    const content = text;
+    const date = new Date();
     const message = {
-      content: text,
-      sender: currentUser.uid,
-      sendTime: new Date(),
+      senderId: senderId,
+      content: content,
+      sendDate: date,
     };
     setText("");
-    const chatRef = collection(db, "chats", activeChatId, "messages");
+    const chatRef = doc(db, "chats", activeChatId);
     try {
-      await addDoc(chatRef, message);
+      const messageRef = await addDoc(collection(chatRef, "messages"), message);
+      await updateDoc(chatRef, {
+        lastMsg: {
+          id: messageRef.id,
+          senderId: senderId,
+          content: content,
+          sendDate: date,
+        },
+      });
       console.log("Message uploaded to Firestore");
     } catch (error) {
       console.error("Error uploading message to Firestore:", error);
@@ -137,34 +149,85 @@ const CustomChat = (props) => {
   };
 
   // RECEIVING MESSAGES
-  const [messages, setMessages] = useState([]);
+  const [messageGroups, setMessageGroups] = useState([]);
+
+  // Function to group messages
+  const groupMessages = async (messages) => {
+    const groupedMessages = [];
+    let currentGroup = [];
+    for (let i = 0; i < messages.length; i++) {
+      if (
+        i === 0 ||
+        messages[i].senderId !== messages[i - 1].senderId ||
+        timeDiffExceeded(messages[i - 1].sendDate, messages[i].sendDate)
+      ) {
+        // Start a new group if it's the first message, or sender changes, or time difference exceeds 5 minutes
+        if (currentGroup.length > 0) {
+          groupedMessages.push(currentGroup);
+        }
+        currentGroup = [messages[i]];
+      }
+      // Add message to the current group if sender is the same and time difference is within 5 minutes
+      else {
+        currentGroup.push(messages[i]);
+      }
+    }
+    // Add the last group if it exists
+    if (currentGroup.length > 0) {
+      groupedMessages.push(currentGroup);
+    }
+
+    return groupedMessages;
+  };
+  // Function to get user document from Firestore
+  const getUserData = async (userId) => {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    return userDoc.data();
+  };
+  // Function to check if time difference exceeds 5 minutes
+  const timeDiffExceeded = (date1, date2) => {
+    const diffInMillis = Math.abs(date2 - date1);
+    const diffInMins = diffInMillis / (1000 * 60);
+
+    return diffInMins > 5;
+  };
 
   useEffect(() => {
     if (activeChatId) {
       const messagesRef = collection(db, "chats", activeChatId, "messages");
-      const messagesQuery = query(messagesRef, orderBy("sendTime"));
+      const messagesQuery = query(messagesRef, orderBy("sendDate"));
 
-      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
         const updatedMessages = snapshot.docs.map((doc) => doc.data());
-        setMessages(updatedMessages);
+        const updatedGroupedMessages = await groupMessages(updatedMessages);
+        setMessageGroups(updatedGroupedMessages);
+        // Enrich each group with sender details
+        const enrichedGroups = await Promise.all(
+          updatedGroupedMessages.map(async (msgGroup) => {
+            const senderId = msgGroup[0].senderId;
+            if (senderId === currentUser.uid) {
+              return {
+                msgGroup,
+              };
+            }
+            const user = await getUserData(senderId);
+            return {
+              msgGroup,
+              senderAvatarURL: user.avatarURL,
+              senderDisplayName: user.displayName,
+            };
+          })
+        );
+        setMessageGroups(enrichedGroups);
       });
 
       return () => unsubscribe();
     }
-  }, [activeChatId]);
-
-  // DISPLAYING MESSAGES
-  const renderMessages = () => {
-    return messages.map((content, sender, sendTime) => (
-      <CustomChatMsg
-        avatar={sender === currentUser.uid ? null : props.avatar}
-        msg={content}
-      />
-    ));
-  };
+  }, []);
 
   // UPLOADING MEDIA
   const filesInputRef = useRef(null);
+
   const handleFilesClick = () => {
     filesInputRef.current.click();
   };
@@ -185,12 +248,14 @@ const CustomChat = (props) => {
 
   // PICKING GIFS
   const [gifsOpen, setGifsOpen] = useState(false);
+
   const handleGifsClick = () => {
     setGifsOpen(true);
   };
 
   // PICKING EMOJIS
   const [emojisOpen, setEmojisOpen] = useState(false);
+
   const handleEmojisClick = () => {
     setEmojisOpen(true);
   };
@@ -199,7 +264,7 @@ const CustomChat = (props) => {
     <div className="flex w-full h-full">
       {activeChatId === null ? (
         <div className="flex flex-col w-full h-full items-center justify-center">
-          <ChatBubbleOvalLeftEllipsisIcon className="h-44 w-44 text-primary-2"></ChatBubbleOvalLeftEllipsisIcon>
+          <ChatBubbleOvalLeftEllipsisIcon className="h-44 w-44 text-primary-2" />
           <CursorArrowRippleIcon className="h-36 w-36 -mt-24 ml-20 text-text-2" />
           <Typography
             variant="h5"
@@ -213,19 +278,15 @@ const CustomChat = (props) => {
         <>
           <div className="h-panel flex flex-col w-2/3 text-text-1">
             <Card className="rounded-none bg-background">
-              <CardBody className="p-3">
-                <div className="flex items-center gap-4">
-                  <Avatar
-                    alt=""
-                    src={props.avatar}
-                    className="border border-secondary-1 bg-avatar"
-                  />
-                  <div>
-                    <Typography className="text-base font-semibold text-text-1">
-                      {props.displayName}
-                    </Typography>
-                  </div>
-                </div>
+              <CardBody className="flex items-center gap-4 p-3">
+                <Avatar
+                  alt="avatar"
+                  src={chatAvatarURL}
+                  className="border border-secondary-1 bg-avatar"
+                />
+                <Typography className="text-base font-semibold text-text-1">
+                  {chatDisplayName}
+                </Typography>
               </CardBody>
             </Card>
             <div
@@ -233,13 +294,8 @@ const CustomChat = (props) => {
               onClick={handleChatAreaClick}
               className="w-full h-full overflow-auto"
             >
-              {messages.map(({ content, sender, sendTime }) => {
-                return (
-                  <CustomChatMsg
-                    avatar={sender === currentUser.uid ? null : props.avatar}
-                    msg={content}
-                  />
-                );
+              {messageGroups.map((group) => {
+                return <CustomChatMsgGroup msgGroup={group} />;
               })}
             </div>
             <div className="flex w-full justify-center p-3 gap-2">
@@ -248,6 +304,7 @@ const CustomChat = (props) => {
                   type="file"
                   ref={filesInputRef}
                   onChange={handleFilesChange}
+                  accept="image/*"
                   hidden
                 />
                 <Tooltip content="Attach a file" className="bg-tooltip/80">
@@ -327,29 +384,25 @@ const CustomChat = (props) => {
             </div>
           </div>
           <div className="h-panel flex flex-col w-1/3 p-2 gap-3 border-l border-secondary-3 text-text-1 overflow-auto">
-            <div>
+            <div className="flex flex-col gap-2">
               <Card className="shadow-none bg-background">
-                <CardBody className="p-2">
-                  <div className="flex flex-col items-center gap-4">
-                    <Avatar
-                      size="xxl"
-                      alt=""
-                      src={props.avatar}
-                      className="border border-secondary-1 bg-avatar"
-                    />
-                    <div>
-                      <Typography className="text-base font-semibold text-text-1">
-                        {props.displayName}
-                      </Typography>
-                    </div>
-                  </div>
+                <CardBody className="flex flex-col items-center p-2 gap-4">
+                  <Avatar
+                    size="xxl"
+                    alt=""
+                    src={chatAvatarURL}
+                    className="border border-secondary-1 bg-avatar"
+                  />
+                  <Typography className="text-base font-semibold text-text-1">
+                    {chatDisplayName}
+                  </Typography>
                 </CardBody>
               </Card>
-              <div className="text-center w-full">
+              <div className="text-center w-full px-3">
                 <button
                   type="button"
                   onClick={() => navigate("/notifications")}
-                  className="w-full p-3 rounded-md hover:bg-secondary-4 text-base font-semibold text-primary-1"
+                  className="w-full p-1 rounded-md hover:bg-secondary-4 text-base font-semibold text-primary-1"
                 >
                   Show profile
                 </button>
@@ -418,12 +471,6 @@ const CustomChat = (props) => {
       )}
     </div>
   );
-};
-
-CustomChat.propTypes = {
-  avatar: PropTypes.string.isRequired,
-  displayName: PropTypes.string.isRequired,
-  messages: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 export default CustomChat;

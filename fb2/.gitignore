@@ -11,6 +11,9 @@
 # production
 /build
 
+# keys
+private-key.json
+
 # misc
 .DS_Store
 .env.local

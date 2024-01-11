@@ -45,9 +45,10 @@ const CustomNotificationMenu = () => {
   // NAVIGATION TO OTHER PAGES
   const navigate = useNavigate();
 
-  const [menuOpen, setMenuOpen] = useState(null);
-  const closeMenu = () => setMenuOpen(false);
+  // OPENING AND CLOSING THE MENU
+  const [menuOpen, setMenuOpen] = useState(false);
 
+  // HANDLING MESSAGE CLICK
   const handleMsgClick = (msgId) => {
     const itemId = notificationMenuItems.findIndex((item) => item.id === msgId);
     if (itemId !== -1 && !notificationMenuItems[itemId].read) {
@@ -58,7 +59,7 @@ const CustomNotificationMenu = () => {
   return (
     <div className="wrapper hidden md:flex h-full">
       <Menu open={menuOpen} handler={setMenuOpen} placement="bottom">
-        <Badge content="5" withBorder className="m-1.5">
+        <Badge content="1" withBorder className="m-1.5">
           <Tooltip content="Notifications" className="bg-tooltip/80">
             <MenuHandler>
               <IconButton
@@ -107,15 +108,15 @@ const CustomNotificationMenu = () => {
               </MenuItem>
             );
           })}
-          <div className="text-center w-full">
+          <MenuItem className="flex px-0 pb-0 items-center !bg-transparent pointer-events-none">
             <button
               type="button"
               onClick={() => navigate("/notifications")}
-              className="w-full p-3 rounded-md hover:bg-secondary-4 text-base font-semibold text-primary-1"
+              className="w-full p-1 rounded-md hover:bg-secondary-4 text-base font-semibold text-primary-1 pointer-events-auto"
             >
               Show all notifications
             </button>
-          </div>
+          </MenuItem>
         </MenuList>
       </Menu>
     </div>

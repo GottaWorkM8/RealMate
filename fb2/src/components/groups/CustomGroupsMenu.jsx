@@ -90,32 +90,30 @@ const CustomGroupsMenu = () => {
   }, [location.pathname]);
 
   return (
-    <Card className="shadow-none rounded-none bg-background">
-      <List>
-        {groupsMenuItems.map(({ id, label, icon }) => {
-          return (
-            <ListItem
-              key={id}
-              onClick={() => handleCategoryClick(id)}
-              selected={isCategoryActive(id)}
-              className={`hover:bg-secondary-4 active:bg-secondary-4 ${
-                activeCategory === id ? "!bg-primary-1/20" : ""
-              }`}
-            >
-              <ListItemPrefix>
-                {React.createElement(icon, {
-                  className: "h-7 w-7 text-text-1",
-                  strokeWidth: 2,
-                })}
-              </ListItemPrefix>
-              <Typography className="text-sm font-semibold text-text-1">
-                {label}
-              </Typography>
-            </ListItem>
-          );
-        })}
-      </List>
-    </Card>
+    <List>
+      {groupsMenuItems.map(({ id, label, icon }) => {
+        return (
+          <ListItem
+            key={id}
+            onClick={() => handleCategoryClick(id)}
+            selected={isCategoryActive(id)}
+            className={`hover:bg-secondary-4 active:bg-secondary-4 ${
+              activeCategory === id ? "!bg-primary-1/20" : ""
+            }`}
+          >
+            <ListItemPrefix>
+              {React.createElement(icon, {
+                className: "h-7 w-7 text-text-1",
+                strokeWidth: 2,
+              })}
+            </ListItemPrefix>
+            <Typography className="text-sm font-semibold text-text-1">
+              {label}
+            </Typography>
+          </ListItem>
+        );
+      })}
+    </List>
   );
 };
 
