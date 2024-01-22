@@ -62,26 +62,17 @@ const CustomFriendsMenu = () => {
 
   useEffect(() => {
     const path = location.pathname;
-
-    if (path === "/friends") {
-      setActiveCategoryId(0);
-    } else {
+    if (path === "/friends") setActiveCategoryId(0);
+    else {
       const match = path.match(/^\/friends\/([^/]+)$/);
-
       if (match) {
         const category = match[1];
         const matchedCategory = friendsMenuItems.find(
           (item) => item.path === category
         );
-
-        if (matchedCategory) {
-          setActiveCategoryId(matchedCategory.id);
-        } else {
-          setActiveCategoryId(null);
-        }
-      } else {
-        setActiveCategoryId(null);
-      }
+        if (matchedCategory) setActiveCategoryId(matchedCategory.id);
+        else setActiveCategoryId(null);
+      } else setActiveCategoryId(null);
     }
   }, [location.pathname]);
 
@@ -93,7 +84,7 @@ const CustomFriendsMenu = () => {
             key={id}
             onClick={() => handleCategoryClick(id)}
             className={`hover:bg-secondary-4 active:bg-secondary-4 ${
-              activeCategoryId === id ? "!bg-primary-1/20" : ""
+              activeCategoryId === id && "!bg-primary-1/20"
             }`}
           >
             <ListItemPrefix>

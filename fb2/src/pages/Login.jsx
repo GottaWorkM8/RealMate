@@ -35,12 +35,12 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-secondary-4">
+    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-background">
       <div className="flex flex-col mt-3 mb-9 mx-6">
         <img className="scale-50" src={logo} alt="" />
         <p className="-mt-3 text-text-3">Freedom and connectivity</p>
       </div>
-      <div className="w-[20rem] sm:w-[30rem] p-6 text-start bg-background rounded-xl shadow-lg">
+      <div className="w-[20rem] sm:w-[30rem] p-6 text-start rounded-xl shadow-lg bg-container">
         <div className="mb-6 px-3 space-y-1">
           <h1 className="text-3xl text-center text-text-2 font-medium">
             Sign In
@@ -89,7 +89,7 @@ const Login = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${apiError ? "" : "hidden"}`}
+              className={`mb-3 ${!apiError && "hidden"}`}
             >
               {apiErrorMessage}
             </Typography>

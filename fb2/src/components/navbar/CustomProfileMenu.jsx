@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/solid";
 import React, { useState } from "react";
 import { useAuth } from "contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const CustomProfileMenu = () => {
   // CURRENT USER
@@ -25,12 +26,29 @@ const CustomProfileMenu = () => {
   const avatarURL = currentUser.photoURL;
   const displayName = currentUser.displayName;
 
+  // SIGN OUT
+  const { logout } = useAuth();
+
+  // NAVIGATION TO OTHER PAGES
+  const navigate = useNavigate();
+
   // OPENING AND CLOSING THE MENU
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // SIGN OUT
-  const { logout } = useAuth();
-  const handleLogout = async (e) => {
+  // HANDLING MENU CLICKS
+  const handleMyProfileClick = () => {
+    navigate(`/profile/user/${currentUser.uid}`);
+  };
+  const handleEditProfileClick = () => {
+    navigate(`/profile/user/edit/${currentUser.uid}`);
+  };
+  const handleSettingsClick = () => {
+    navigate(`/profile/user/settings/${currentUser.uid}`);
+  };
+  const handleHelpClick = () => {
+    navigate("/help");
+  };
+  const handleSignOutClick = () => {
     try {
       logout();
     } catch (error) {
@@ -38,10 +56,12 @@ const CustomProfileMenu = () => {
     }
   };
 
+  // SIGN OUT
+
   return (
     <div className="wrapper h-full">
       <Menu open={menuOpen} handler={setMenuOpen} placement="bottom-end">
-        <Tooltip content="Account" className="bg-tooltip/80">
+        <Tooltip content="Account" className="bg-tooltip/90">
           <MenuHandler>
             <Button
               className={`flex h-full py-6 pl-0 pr-2 items-center space-x-1 rounded-full ${
@@ -59,7 +79,7 @@ const CustomProfileMenu = () => {
               />
               <ChevronDownIcon
                 className={`h-4 w-4 transition-transform ${
-                  menuOpen ? "rotate-180" : ""
+                  menuOpen && "rotate-180"
                 }`}
               />
             </Button>
@@ -76,37 +96,49 @@ const CustomProfileMenu = () => {
               {displayName}
             </Typography>
           </MenuItem>
-          <MenuItem className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4">
+          <MenuItem
+            onClick={handleMyProfileClick}
+            className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+          >
             <UserCircleIcon className="h-4 w-4 text-text-1" />
             <Typography className="text-sm font-semibold text-text-1">
               My Profile
             </Typography>
           </MenuItem>
-          <MenuItem className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4">
+          <MenuItem
+            onClick={handleEditProfileClick}
+            className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+          >
             <PencilSquareIcon className="h-4 w-4 text-text-1" />
             <Typography className="text-sm font-semibold text-text-1">
               Edit Profile
             </Typography>
           </MenuItem>
-          <MenuItem className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4">
+          <MenuItem
+            onClick={handleSettingsClick}
+            className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+          >
             <Cog8ToothIcon className="h-4 w-4 text-text-1" />
             <Typography className="text-sm font-semibold text-text-1">
               Settings
             </Typography>
           </MenuItem>
-          <MenuItem className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4">
+          <MenuItem
+            onClick={handleHelpClick}
+            className="flex items-center gap-3 rounded hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+          >
             <LifebuoyIcon className="h-4 w-4 text-text-1" />
             <Typography className="text-sm font-semibold text-text-1">
               Help
             </Typography>
           </MenuItem>
           <MenuItem
-            onClick={handleLogout}
+            onClick={handleSignOutClick}
             className="flex items-center gap-3 rounded hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
           >
             <PowerIcon className="h-4 w-4 text-red-500" />
             <Typography className="text-sm font-semibold text-red-500">
-              Sign out
+              Sign Out
             </Typography>
           </MenuItem>
         </MenuList>

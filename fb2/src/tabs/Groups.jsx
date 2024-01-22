@@ -13,28 +13,38 @@ import {
   Accordion,
   AccordionBody,
 } from "@material-tailwind/react";
-import CustomSearchInput from "components/CustomSearchInput";
+import CustomSearchInput from "components/inputs/CustomSearchInput";
 import CustomGroups from "components/groups/CustomGroups";
 import CustomGroupsMenu from "components/groups/CustomGroupsMenu";
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import { db } from "../api/firebase";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "contexts/AuthContext";
-import CustomInput from "components/CustomInput";
+import CustomInput from "components/inputs/CustomInput";
+import {
+  getGroupProfileData,
+  getUserGroupKeywordSetsData,
+  getUserGroupsData,
+} from "apis/firebase";
 
 function Groups() {
   // CURRENT USER
   const { currentUser } = useAuth();
 
   // NAVIGATION TO OTHER PAGES
+  const navigate = useNavigate();
   const location = useLocation();
 
-  // FETCHING groupS
-  const [groupsList, setGroupsList] = useState([]);
+  // FETCHING GROUPS
+  const [groups, setGroups] = useState([]);
 
   const fetchGroups = async () => {
-    if (currentUser) {
+    const userGroups = await getUserGroupsData(currentUser.uid);
+    const matchedGroups = [];
+    for (const userGroup of userGroups) {
+      const group = await getGroupProfileData(userGroup.id);
+      matchedGroups.push(group);
     }
+    setGroups(matchedGroups);
   };
 
   useEffect(() => {
@@ -42,17 +52,25 @@ function Groups() {
   }, []);
 
   // SEARCHING FOR GROUPS
-  const [searchedGroups, setSearchedGroups] = useState([]);
+  const [foundGroups, setFoundGroups] = useState([]);
 
   const handleSearch = async (term) => {
-    const lcTerm = term.toLowerCase();
-    const filteredGroups = groupsList.filter((group) =>
-      group.displayName.toLowerCase().includes(lcTerm)
-    );
-    setSearchedGroups(filteredGroups);
+    const userGroups = await getUserGroupKeywordSetsData(currentUser.uid, term);
+    const matchedGroups = [];
+    for (const userGroup of userGroups) {
+      const group = groups.find((user) => user.id === userGroup.id);
+      if (group) matchedGroups.push(group);
+    }
+    setFoundGroups(matchedGroups);
   };
 
-  // ADDING NEW group
+  // HANDLE GROUP SEARCH RESULT CLICK
+  const handleGroupResultClick = (userId) => {
+    const group = foundGroups.find((user) => user.id === userId);
+    if (group) navigate(`/profile/group/${group.id}`);
+  };
+
+  // ADDING NEW GROUP
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupNameError, setGroupNameError] = useState(false);
@@ -65,7 +83,7 @@ function Groups() {
     setGroupDialogOpen(false);
   };
 
-  // HANDLING NEW group ACCORDION
+  // HANDLING NEW GROUP ACCORDION
   const [accordionOpen, setAccordionOpen] = useState(true);
   const [addedMembers, setAddedMembers] = useState([]);
 
@@ -105,24 +123,22 @@ function Groups() {
   return (
     <div className="wrapper flex">
       <div className="h-panel flex flex-col w-1/4 border-r border-secondary-3">
-        <div className="flex flex-col px-4 py-2 gap-2">
+        <div className="flex flex-col p-4 pb-2 gap-2">
           <div className="flex justify-between">
-            <h1 className="mt-2 text-2xl text-text-1 font-bold">Groups</h1>
+            <h1 className="text-2xl text-text-1 font-bold">Groups</h1>
             <Tooltip
               content="Create new group"
               placement="left"
-              className="bg-tooltip/80"
+              className="bg-tooltip/90"
             >
               <IconButton
-                size="lg"
                 onClick={handleGroupDialogOpen}
-                className={`rounded-full ${
-                  groupDialogOpen
-                    ? "bg-primary-1/20 hover:bg-primary-1/30 text-primary-1"
-                    : "bg-secondary-1/40 hover:bg-secondary-1/60 text-text-2"
+                className={`rounded-full shadow-none bg-transparent hover:bg-secondary-1/40 text-text-2 ${
+                  groupDialogOpen &&
+                  "bg-primary-1/20 hover:bg-primary-1/30 text-primary-1"
                 }`}
               >
-                <PlusCircleIcon className="h-7 w-7" />
+                <PlusCircleIcon className="h-6 w-6" />
               </IconButton>
             </Tooltip>
             <Dialog
@@ -139,6 +155,8 @@ function Groups() {
                     <CustomSearchInput
                       placeholder="Search for members"
                       onSearch={handleSearch}
+                      results={foundGroups}
+                      onResultClick={handleGroupResultClick}
                     />
                     <Accordion open={accordionOpen} animate={customAnimation}>
                       <AccordionHeader
@@ -150,12 +168,12 @@ function Groups() {
                         </div>
                         <ChevronDownIcon
                           className={`h-4 w-4 transition-transform ${
-                            accordionOpen ? "rotate-180" : ""
+                            accordionOpen && "rotate-180"
                           }`}
                         />
                       </AccordionHeader>
                       <AccordionBody className="py-1 px-3 gap-1">
-                        {addedMembers.at[0] ? "" : "None"}
+                        {!addedMembers.at[0] && "None"}
                       </AccordionBody>
                     </Accordion>
                   </div>
@@ -171,7 +189,7 @@ function Groups() {
                         variant="small"
                         color="red"
                         className={`absolute mb-3 ${
-                          groupNameError ? "" : "hidden"
+                          !groupNameError && "hidden"
                         }`}
                       >
                         Use at least one letter or digit, no special characters.

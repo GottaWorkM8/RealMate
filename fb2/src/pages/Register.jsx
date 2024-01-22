@@ -24,10 +24,10 @@ const Register = () => {
   const theme = createTheme({
     palette: {
       primary: {
-        main: "#009688", // teal 500
+        main: "rgb(var(--color-primary1)) !important",
       },
       secondary: {
-        main: "#90a4ae", // blue gray 300
+        main: "rgb(var(--color-secondary1)) !important",
       },
     },
     shape: {
@@ -187,12 +187,12 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-secondary-4">
+    <div className="flex flex-col w-full min-h-full items-center text-center p-3 pb-12 bg-background">
       <div className="flex flex-col mt-3 mb-9 mx-6">
         <img className="scale-50" src={logo} alt="" />
         <p className="-mt-3 text-text-3 ">Freedom and connectivity</p>
       </div>
-      <div className="w-[20rem] sm:w-[30rem] p-6 text-start bg-background rounded-xl shadow-lg">
+      <div className="w-[20rem] sm:w-[30rem] p-6 text-start rounded-xl shadow-lg bg-container">
         <div className="mb-6 px-3 space-y-1">
           <h1 className="text-3xl text-center text-text-2 font-medium">
             Sign Up
@@ -217,7 +217,7 @@ const Register = () => {
               <Typography
                 variant="small"
                 color="red"
-                className={` ${firstNameError ? "" : "hidden"}`}
+                className={` ${!firstNameError && "hidden"}`}
               >
                 Use at least one letter, no numbers or special characters.
               </Typography>
@@ -236,7 +236,7 @@ const Register = () => {
               <Typography
                 variant="small"
                 color="red"
-                className={` ${lastNameError ? "" : "hidden"}`}
+                className={` ${!lastNameError && "hidden"}`}
               >
                 Use at least one letter, no numbers or special characters.
               </Typography>
@@ -256,7 +256,7 @@ const Register = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${emailError ? "" : "hidden"}`}
+              className={`mb-3 ${!emailError && "hidden"}`}
             >
               Use a valid email address.
             </Typography>
@@ -277,7 +277,7 @@ const Register = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${passwordError ? "" : "hidden"}`}
+              className={`mb-3 ${!passwordError && "hidden"}`}
             >
               Use at least 8 characters, one uppercase, one lowercase and one
               number, without any special characters.
@@ -314,8 +314,7 @@ const Register = () => {
                     disableFuture
                     disableHighlightToday
                     value={birthdate}
-                    desktopModeMediaQuery="true"
-                    onChange={(date) => setBirthdate(date)}
+                    onChange={(date) => setBirthdate(new Date(date))}
                     ref={datePickerRef}
                     slotProps={{
                       textField: { size: "small" },
@@ -334,16 +333,19 @@ const Register = () => {
                       "& .MuiInputLabel-shrink": {
                         color: "#78909c", // blue gray 400
                       },
-                      "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline":
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        border: "1px solid #b0bec5", // blue gray 200
+                      },
+                      "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
                         {
-                          border: "1px solid #b0bec5", // blue gray 200
+                          border: "2px solid #b0bec5", // blue gray 200
                         },
                       "& .MuiButtonBase-root:hover": {
-                        color: "#009688", // teal 500
-                        backgroundColor: "#eceff1", // blue gray 50
+                        color: "rgb(var(--color-primary1)) !important",
+                        backgroundColor:
+                          "rgb(var(--color-secondary4)) !important",
                       },
                       "& input": {
-                        color: "#455a64", // blue gray 700
                         fontSize: "14px",
                         fontFamily: "system-ui",
                         padding: "10px 13px",
@@ -356,7 +358,7 @@ const Register = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${birthdateError ? "" : "hidden"}`}
+              className={`mb-3 ${!birthdateError && "hidden"}`}
             >
               Pick a valid birth date.
             </Typography>
@@ -481,7 +483,7 @@ const Register = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${checkError ? "" : "hidden"}`}
+              className={`mb-3 ${!checkError && "hidden"}`}
             >
               Accept Terms & Conditions.
             </Typography>
@@ -490,7 +492,7 @@ const Register = () => {
             <Typography
               variant="small"
               color="red"
-              className={`mb-3 ${apiError ? "" : "hidden"}`}
+              className={`mb-3 ${!apiError && "hidden"}`}
             >
               {apiErrorMessage}
             </Typography>

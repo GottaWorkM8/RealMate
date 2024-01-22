@@ -60,32 +60,24 @@ const CustomGroupsMenu = () => {
       const matchedCategory = groupsMenuItems.find(
         (item) => item.id === categoryId
       );
-      navigate(`/groups/${matchedCategory.path}`);
+      if (matchedCategory) navigate(`/groups/${matchedCategory.path}`);
     }
   };
 
   useEffect(() => {
     const path = location.pathname;
-
-    if (path === "/groups") {
-      setActiveCategory(0);
-    } else {
+    if (path === "/groups") setActiveCategory(0);
+    else {
       const match = path.match(/^\/groups\/([^/]+)$/);
-
       if (match) {
         const category = match[1];
         const matchedCategory = groupsMenuItems.find(
           (item) => item.path === category
         );
 
-        if (matchedCategory) {
-          setActiveCategory(matchedCategory.id);
-        } else {
-          setActiveCategory(null);
-        }
-      } else {
-        setActiveCategory(null);
-      }
+        if (matchedCategory) setActiveCategory(matchedCategory.id);
+        else setActiveCategory(null);
+      } else setActiveCategory(null);
     }
   }, [location.pathname]);
 
@@ -98,7 +90,7 @@ const CustomGroupsMenu = () => {
             onClick={() => handleCategoryClick(id)}
             selected={isCategoryActive(id)}
             className={`hover:bg-secondary-4 active:bg-secondary-4 ${
-              activeCategory === id ? "!bg-primary-1/20" : ""
+              activeCategory === id && "!bg-primary-1/20"
             }`}
           >
             <ListItemPrefix>

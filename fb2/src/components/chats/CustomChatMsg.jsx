@@ -1,8 +1,10 @@
-import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { Typography } from "@material-tailwind/react";
 import React, { useState } from "react";
 
-const CustomChatMsg = ({ msg }) => {
+const CustomChatMsg = ({ id, sender, content, sendDate, currentUserSender }) => {
+  // HANDLE HOVERING
   const [hovered, setHovered] = useState(false);
+
   const handleMouseEnter = () => {
     setHovered(true);
   };
@@ -10,22 +12,26 @@ const CustomChatMsg = ({ msg }) => {
     setHovered(false);
   };
 
+  // HANDLE CLICKING
+  const handleClick = (e) => {
+    e.stopPropagation();
+  }
+
   return (
-    <Card
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="shadow-none bg-background"
-    >
-      <CardBody className="flex mx-2 p-2 gap-4">
+    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <div className={`flex ${currentUserSender && "justify-end"} gap-4`}>
         <Typography
-          className={`rounded-md p-2 bg-secondary-4 ${
-            hovered ? "bg-secondary-3" : ""
+          onClick={handleClick}
+          className={`p-2 ${
+            currentUserSender ? "rounded-s-md" : "rounded-e-md"
+          } bg-secondary-4 ${
+            hovered && "bg-secondary-3"
           } text-sm font-normal text-text-1 break-all`}
         >
-          {msg}
+          {content}
         </Typography>
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 };
 

@@ -4,7 +4,6 @@ module.exports = withMT({
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     colors: {
-      // Based on color palettes from https://www.material-tailwind.com/docs/react/colors
       primary: {
         1: "rgb(var(--color-primary1) / <alpha-value>)", // teal 500
         2: "rgb(var(--color-primary2) / <alpha-value>)", // teal 200 d: teal 700
@@ -23,7 +22,8 @@ module.exports = withMT({
         3: "rgb(var(--color-text3) / <alpha-value>)", // blue gray 500 d: blue gray 200
         4: "rgb(var(--color-text4) / <alpha-value>)", // blue gray 400
       },
-      background: "rgb(var(--color-background) / <alpha-value>)", // white d: gray 900
+      background: "rgb(var(--color-background) / <alpha-value>)", // rgb(255 255 255) d: rgb(26 34 38)
+      container: "rgb(var(--color-container) / <alpha-value>)", // rgb(236 239 241) d: rgb(17 22 25)
       tooltip: "rgb(var(--color-tooltip) / <alpha-value>)", // blue gray 900
       avatar: "rgb(var(--color-avatar) / <alpha-value>)", // blue gray 50
     },

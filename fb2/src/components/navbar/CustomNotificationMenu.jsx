@@ -51,16 +51,21 @@ const CustomNotificationMenu = () => {
   // HANDLING MESSAGE CLICK
   const handleMsgClick = (msgId) => {
     const itemId = notificationMenuItems.findIndex((item) => item.id === msgId);
-    if (itemId !== -1 && !notificationMenuItems[itemId].read) {
+    if (itemId !== -1 && !notificationMenuItems[itemId].read)
       notificationMenuItems.at(itemId).read = true;
-    }
   };
 
   return (
     <div className="wrapper hidden md:flex h-full">
       <Menu open={menuOpen} handler={setMenuOpen} placement="bottom">
-        <Badge content="1" withBorder className="m-1.5">
-          <Tooltip content="Notifications" className="bg-tooltip/80">
+        <Badge
+          content="1"
+          withBorder
+          className="border-text-2"
+          overlap="circular"
+          placement="top-end"
+        >
+          <Tooltip content="Notifications" className="bg-tooltip/90">
             <MenuHandler>
               <IconButton
                 size="lg"
@@ -91,14 +96,14 @@ const CustomNotificationMenu = () => {
                 <div className="flex flex-col gap-1">
                   <Typography
                     className={`text-sm font-semibold text-text-1 ${
-                      read ? "font-normal text-text-3" : ""
+                      read && "font-normal text-text-3"
                     }`}
                   >
                     {msg}
                   </Typography>
                   <Typography
                     className={`flex items-center gap-1 text-xs font-medium text-primary-1 ${
-                      read ? "font-normal text-text-3" : ""
+                      read && "font-normal text-text-3"
                     }`}
                   >
                     <ClockIcon className="h-4 w-4" />

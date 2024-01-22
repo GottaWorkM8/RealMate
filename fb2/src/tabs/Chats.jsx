@@ -1,42 +1,34 @@
-import { ChevronDownIcon, PlusCircleIcon } from "@heroicons/react/24/solid";
+import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/solid";
+import { CursorArrowRippleIcon } from "@heroicons/react/24/outline";
 import {
-  Avatar,
-  Typography,
   Tab,
   TabPanel,
   Tabs,
   TabsBody,
   TabsHeader,
-  Tooltip,
-  IconButton,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Button,
-  AccordionHeader,
-  Accordion,
-  AccordionBody,
+  Typography,
 } from "@material-tailwind/react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { db } from "../api/firebase";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  where,
-} from "firebase/firestore";
 import { useAuth } from "contexts/AuthContext";
-import CustomChat from "../components/chats/CustomChat";
-import CustomSearchInput from "components/CustomSearchInput";
-import CustomInput from "components/CustomInput";
+import CustomChat from "components/chats/CustomChat";
 import CustomChatsList from "components/chats/CustomChatsList";
 import CustomGroupChatsList from "components/chats/CustomGroupChatsList";
-import { compressImage } from "utils";
+import CustomChatsMenu from "components/chats/CustomChatsMenu";
+import CustomGroupChatsMenu from "components/chats/CustomGroupChatsMenu";
+import {
+  db,
+  getChatData,
+  getChatMessage,
+  getGroupChatData,
+  getGroupChatMessage,
+  getGroupChatProfileData,
+  getUserChatData,
+  getUserProfileData,
+} from "apis/firebase";
+import LoadIndicator from "components/indicators/LoadIndicator";
+import { collection, doc, onSnapshot, query } from "firebase/firestore";
+import CustomGroupChat from "components/chats/CustomGroupChat";
 
 const Chats = () => {
   // CURRENT USER
@@ -46,325 +38,253 @@ const Chats = () => {
   const location = useLocation();
 
   // FETCHING CHATS
-  const [chatsList, setChatsList] = useState([]);
-  const [groupChatsList, setGroupChatsList] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [chatsLoaded, setChatsLoaded] = useState(false);
 
-  const fetchChats = async () => {
-    if (currentUser) {
-      const currentUserId = currentUser.uid;
-      const chatsQuery = query(
-        collection(db, "chats"),
-        where("members.memberId", "==", currentUserId)
-      );
-      const chatsSnapshot = await getDocs(chatsQuery);
-      const chatsData = [];
-      for (const docum of chatsSnapshot.docs) {
-        const chatData = docum.data();
-        const userIndex = chatData.members.findIndex(
-          (member) => member.memberId === currentUserId
-        );
-        const partnerIndex = userIndex === 0 ? 1 : 0;
-        const partnerId = chatData.members[partnerIndex].memberId;
-        const partnerSnapshot = await getDoc(doc(db, "users", partnerId));
-        const partner = partnerSnapshot.exists ? partnerSnapshot.data() : null;
-        if (partner) {
-          chatsData.push({
-            id: docum.id,
-            docRef: docum.ref,
-            avatarURL: partner.avatarURL,
-            displayName: partner.displayName,
-            members: chatData.members,
-            userIndex: userIndex,
-            partnerIndex: partnerIndex,
-            creationDate: chatData.creationDate,
-            lastMsg: chatData.lastMsg,
-          });
-        }
-      }
-      setChatsList(chatsData);
-    }
+  const modifyUserChat = async (userChat) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) => {
+        if (chat.id === userChat.id)
+          return {
+            ...chat,
+            lastActive: userChat.lastActive.toDate(),
+          };
+        return chat;
+      })
+    );
   };
 
-  const fetchGroupChats = async () => {
-    if (currentUser) {
-      const currentUserId = currentUser.uid;
-      const chatsQuery = query(
-        collection(db, "groupChats"),
-        where("members.memberId", "==", currentUserId)
-      );
-      const chatsSnapshot = await getDocs(chatsQuery);
-      const chatsData = [];
-      for (const docum of chatsSnapshot.docs) {
-        const chatData = docum.data();
-        const userIndex = chatData.members.findIndex(
-          (member) => member.memberId === currentUserId
-        );
-        chatsData.push({
-          id: docum.id,
-          docRef: docum.ref,
-          avatarURL: chatData.avatarURL,
-          displayName: chatData.displayName,
-          members: chatData.members,
-          userIndex: userIndex,
-          creationDate: chatData.creationDate,
-          lastMsg: chatData.lastMsg,
+  const fetchChats = async () => {
+    const userChatsQuery = query(
+      collection(db, "userChats", currentUser.uid, "chats")
+    );
+    const unsubscribe = onSnapshot(userChatsQuery, async (snapshot) => {
+      if (chatsLoaded) {
+        const userChatChanges = snapshot.docChanges();
+        userChatChanges.forEach(async (change) => {
+          const userChat = change.doc.data();
+          if (change.type === "modified") await modifyUserChat(userChat);
         });
+      } else {
+        const userChats = snapshot.docs.map((docum) => docum.data());
+        const matchedChats = [];
+        for (const userChat of userChats) {
+          const partner = await getUserProfileData(userChat.partner);
+          const partnerChat = await getUserChatData(
+            userChat.partner,
+            userChat.id
+          );
+          const chat = await getChatData(userChat.id);
+          let lastMessage = null;
+          if (chat.lastMessage)
+            lastMessage = await getChatMessage(chat.id, chat.lastMessage);
+          matchedChats.push({
+            id: chat.id,
+            partnerId: partner.id,
+            avatarURL: partner.avatarURL,
+            displayName: partner.displayName,
+            lastActive: userChat.lastActive.toDate(),
+            isMuted: userChat.isMuted,
+            isBlocked: userChat.isBlocked,
+            partnerLastActive: partnerChat.lastActive,
+            partnerIsMuted: partnerChat.isMuted,
+            partnerIsBlocked: partnerChat.isBlocked,
+            creationDate: chat.creationDate.toDate(),
+            lastMessage: lastMessage,
+          });
+        }
+        await setChats(matchedChats);
+        setChatsLoaded(true);
       }
-      setGroupChatsList(chatsData);
-    }
+    });
+
+    return () => unsubscribe();
   };
 
   useEffect(() => {
     fetchChats();
+  }, [chats]);
+
+  const modifyChat = async (chatId, lastMessage) => {
+    setChats((prevChats) =>
+      prevChats.map((prevChat) => {
+        if (prevChat.id === chatId)
+          return {
+            ...prevChat,
+            lastMessage: lastMessage,
+          };
+
+        return prevChat;
+      })
+    );
+  };
+
+  const fetchChatLastMessages = async () => {
+    for (const chat of chats) {
+      const chatRef = doc(db, "chats", chat.id);
+      onSnapshot(chatRef, async (doc) => {
+        if (doc.exists()) {
+          const chat = await getChatData(doc.id);
+          let lastMessage = null;
+          if (chat.lastMessage)
+            lastMessage = await getChatMessage(doc.id, chat.lastMessage);
+          await modifyChat(doc.id, lastMessage);
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (chats) fetchChatLastMessages();
+  }, [chats]);
+
+  // FETCHING GROUP CHATS
+  const [groupChats, setGroupChats] = useState([]);
+  const [groupChatsLoaded, setGroupChatsLoaded] = useState(false);
+
+  const modifyUserGroupChat = async (userGroupChat) => {
+    setGroupChats((prevGroupChats) =>
+      prevGroupChats.map((groupChat) => {
+        if (groupChat.id === userGroupChat.id)
+          return {
+            ...groupChat,
+            lastActive: userGroupChat.lastActive.toDate(),
+          };
+        return groupChat;
+      })
+    );
+  };
+
+  const fetchGroupChats = async () => {
+    const userGroupChatsQuery = query(
+      collection(db, "userGroupChats", currentUser.uid, "groupChats")
+    );
+    const unsubscribe = onSnapshot(userGroupChatsQuery, async (snapshot) => {
+      if (groupChatsLoaded) {
+        const userGroupChatChanges = snapshot.docChanges();
+        userGroupChatChanges.forEach(async (change) => {
+          const userGroupChat = change.doc.data();
+          if (change.type === "modified")
+            await modifyUserGroupChat(userGroupChat);
+        });
+      } else {
+        const userGroupChats = snapshot.docs.map((docum) => docum.data());
+        const matchedChats = [];
+        for (const userGroupChat of userGroupChats) {
+          const groupChatProfile = await getGroupChatProfileData(
+            userGroupChat.id
+          );
+          const groupChat = await getGroupChatData(userGroupChat.id);
+          const lastMessage = await getGroupChatMessage(
+            groupChat.id,
+            groupChat.lastMessage
+          );
+          matchedChats.push({
+            id: groupChat.id,
+            avatarURL: groupChatProfile.avatarURL,
+            displayName: groupChatProfile.displayName,
+            joinDate: userGroupChat.joinDate.toDate(),
+            lastActive: userGroupChat.lastActive.toDate(),
+            isMuted: userGroupChat.isMuted,
+            creationDate: groupChat.creationDate.toDate(),
+            lastMessage: lastMessage,
+          });
+        }
+        await setGroupChats(matchedChats);
+        setGroupChatsLoaded(true);
+      }
+    });
+
+    return () => unsubscribe();
+  };
+
+  useEffect(() => {
     fetchGroupChats();
   }, []);
 
-  // SEARCHING FOR CHATS
-  const [searchedChats, setSearchedChats] = useState([]);
-  const [searchedGroupChats, setSearchedGroupChats] = useState([]);
+  const modifyGroupChat = async (chatId, lastMessage) => {
+    setGroupChats((prevGroupChats) =>
+      prevGroupChats.map((prevGroupChat) => {
+        if (prevGroupChat.id === chatId)
+          return {
+            ...prevGroupChat,
+            lastMessage: lastMessage,
+          };
 
-  const handleSearch = async (term) => {
-    const lcTerm = term.toLowerCase();
-    const filteredChats = chatsList.filter((chat) =>
-      chat.displayName.toLowerCase().includes(lcTerm)
+        return prevGroupChat;
+      })
     );
-    const filteredGroupChats = chatsList.filter((groupChat) =>
-      groupChat.displayName.toLowerCase().includes(lcTerm)
-    );
-    setSearchedChats(filteredChats);
-    setSearchedGroupChats(filteredGroupChats);
   };
+
+  const fetchGroupChatLastMessages = async () => {
+    for (const groupChat of groupChats) {
+      const groupChatRef = doc(db, "chats", groupChat.id);
+      onSnapshot(groupChatRef, async (doc) => {
+        if (doc.exists()) {
+          const groupChat = await getChatData(doc.id);
+          let lastMessage = null;
+          if (groupChat.lastMessage)
+            lastMessage = await getGroupChatMessage(
+              doc.id,
+              groupChat.lastMessage
+            );
+          await modifyGroupChat(doc.id, lastMessage);
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (groupChats) fetchGroupChatLastMessages();
+  }, [groupChats]);
+
+  // HANDLING TABS
+  const [activeTab, setActiveTab] = useState(0);
 
   // HANDLING CHATS
   const [activeChatId, setActiveChatId] = useState(null);
-  const [activeChatAvatarURL, setActiveChatAvatarURL] = useState(null);
-  const [activeChatDisplayName, setActiveChatDisplayName] = useState(null);
-  const [activeChatDocRef, setActiveChatDocRef] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
+  const [activeChatKey, setActiveChatKey] = useState(0);
+  const [activeGroupChat, setActiveGroupChat] = useState(null);
+  const [activeGroupChatKey, setActiveGroupChatKey] = useState(0);
 
   useEffect(() => {
+    setActiveChatId(null);
     const path = location.pathname;
     const match = path.match(/^\/chats\/(.+)$/);
     if (match) {
       const chatId = match[1];
-      const chat = chatsList.find((item) => item.id === chatId);
+      setActiveChatId(chatId);
+      setActiveChatKey((prevKey) => prevKey + 1);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (activeChatId && chatsLoaded && groupChatsLoaded) {
+      setActiveChat(null);
+      setActiveGroupChat(null);
+      const chat = chats.find((item) => item.id === activeChatId);
       if (chat) {
-        setActiveChatId(chatId);
-        setActiveChatAvatarURL(chat.avatarURL);
-        setActiveChatDisplayName(chat.displayName);
-        setActiveChatDocRef(chat.docRef);
+        setActiveChatId(chat.id);
+        setActiveChat(chat);
+        return;
+      }
+      const groupChat = groupChats.find((item) => item.id === activeChatId);
+      if (groupChat) {
+        setActiveChatId(groupChat.id);
+        setActiveGroupChat(groupChat);
         return;
       }
     }
-    setActiveChatId(null);
-    setActiveChatAvatarURL(null);
-    setActiveChatDisplayName(null);
-    setActiveChatDocRef(null);
-  }, []);
-
-  // ADDING NEW CHAT
-  const [chatDialogOpen, setChatDialogOpen] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupNameError, setGroupNameError] = useState(false);
-  const [groupAvatar, setGroupAvatar] = useState(null);
-
-  const handleChatDialogOpen = () => {
-    setChatDialogOpen(!chatDialogOpen);
-  };
-  const handleChatDialogConfirm = () => {
-    setChatDialogOpen(false);
-  };
-
-  // HANDLING NEW CHAT ACCORDION
-  const [accordionOpen, setAccordionOpen] = useState(true);
-  const [addedMembers, setAddedMembers] = useState([]);
-
-  const handleAccordionOpen = () => {
-    setAccordionOpen(!accordionOpen);
-  };
-
-  // ACCORDION ANIMATION
-  const customAnimation = {
-    mount: { scale: 1 },
-    unmount: { scale: 0.95 },
-  };
-
-  // FUNCTIONS FOR INPUT VALIDATION
-  const validateGroupName = (name) => {
-    const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż0-9\s]+$/;
-    const error = name.length < 1 || !hasValidCharacters.test(name);
-
-    setGroupNameError(error);
-    return !error;
-  };
-
-  // UPLOADING NEW GROUP CHAT IMAGE
-  const fileInputRef = useRef(null);
-
-  const handleFileClick = () => {
-    fileInputRef.current.click();
-  };
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const compressedFile = await compressImage(file);
-    setGroupAvatar(compressedFile);
-    e.target.value = null;
-    console.log("File uploaded:", file.name);
-  };
-
-  // SEARCHING FOR NEW CHAT MEMBERS
-  const [searchedUsers, setSearchedUsers] = useState([]);
-
-  const handleUserSearch = async (term) => {
-    const lcTerm = term.toLowerCase();
-    if (lcTerm.length > 0) {
-      // Search for users by keywords
-      const usersQuery = query(
-        collection(db, "users"),
-        where("keywords", "array-contains", lcTerm),
-        limit(3)
-      );
-      const usersSnapshot = await getDocs(usersQuery);
-      const users = usersSnapshot.docs.map((doc) => doc.data());
-      setSearchedUsers(users);
-    } else {
-      setSearchedUsers([]);
-    }
-  };
-
-  useEffect(() => {
-    console.log("Searched users: " + searchedUsers.length);
-  }, [searchedUsers]);
+  }, [activeChatId, chatsLoaded, groupChatsLoaded]);
 
   return (
     <div className="wrapper flex">
       <div className="h-panel flex flex-col w-1/4 border-r border-secondary-3">
-        <div className="flex flex-col px-4 py-2 gap-2">
-          <div className="flex justify-between">
-            <h1 className="mt-2 text-2xl text-text-1 font-bold">Chats</h1>
-            <Tooltip
-              content="Create new chat"
-              placement="left"
-              className="bg-tooltip/80"
-            >
-              <IconButton
-                size="lg"
-                onClick={handleChatDialogOpen}
-                className={`rounded-full ${
-                  chatDialogOpen
-                    ? "bg-primary-1/20 hover:bg-primary-1/30 text-primary-1"
-                    : "bg-secondary-1/40 hover:bg-secondary-1/60 text-text-2"
-                }`}
-              >
-                <PlusCircleIcon className="h-7 w-7" />
-              </IconButton>
-            </Tooltip>
-            <Dialog
-              open={chatDialogOpen}
-              handler={handleChatDialogOpen}
-              className="bg-background"
-            >
-              <DialogHeader className="text-text-2">
-                Create new chat
-              </DialogHeader>
-              <DialogBody className="h-dialog overflow-auto text-text-3">
-                <div className="flex flex-col p-2 gap-6">
-                  <div className="flex flex-col gap-3">
-                    <CustomSearchInput
-                      placeholder="Search for members"
-                      onSearch={handleUserSearch}
-                      results={searchedUsers}
-                    />
-                    <Accordion open={accordionOpen} animate={customAnimation}>
-                      <AccordionHeader
-                        onClick={handleAccordionOpen}
-                        className="flex rounded-md p-2 border-0 text-sm font-semibold text-text-2 hover:text-text-2 hover:bg-secondary-4"
-                      >
-                        <div className="flex w-full items-center">
-                          Added members
-                        </div>
-                        <ChevronDownIcon
-                          className={`h-4 w-4 transition-transform ${
-                            accordionOpen ? "rotate-180" : ""
-                          }`}
-                        />
-                      </AccordionHeader>
-                      <AccordionBody className="py-1 px-3 gap-1">
-                        {addedMembers.at[0] ? "" : "None"}
-                      </AccordionBody>
-                    </Accordion>
-                  </div>
-                  <div className="flex w-full items-center gap-3">
-                    <div className="flex-1 flex-col">
-                      <CustomInput
-                        placeholder="Group chat name"
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        onBlur={() => validateGroupName(groupName)}
-                      />
-                      <Typography
-                        variant="small"
-                        color="red"
-                        className={`absolute mb-3 ${
-                          groupNameError ? "" : "hidden"
-                        }`}
-                      >
-                        Use at least one letter or digit, no special characters.
-                      </Typography>
-                    </div>
-                    <div className="flex justify-center items-center gap-1">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        hidden
-                      />
-                      <Avatar
-                        size="xxl"
-                        alt=""
-                        src={
-                          groupAvatar
-                            ? URL.createObjectURL(groupAvatar)
-                            : "https://firebasestorage.googleapis.com/v0/b/realmate-12bb1.appspot.com/o/avatars%2Fgroup.png?alt=media&token=9d4f32df-8837-4a2a-af45-de7b08614d56"
-                        }
-                        className="border border-secondary-1 bg-avatar"
-                      />
-                      <IconButton
-                        onClick={handleFileClick}
-                        className="shadow-none rounded-full bg-transparent hover:bg-secondary-1/40 text-text-2 hover:text-text-1"
-                      >
-                        <PlusCircleIcon className="h-6 w-6" />
-                      </IconButton>
-                    </div>
-                  </div>
-                </div>
-              </DialogBody>
-              <DialogFooter className="space-x-2">
-                <Button
-                  variant="text"
-                  color="blue-gray"
-                  onClick={handleChatDialogOpen}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="gradient"
-                  color="teal"
-                  onClick={handleChatDialogConfirm}
-                >
-                  Confirm
-                </Button>
-              </DialogFooter>
-            </Dialog>
-          </div>
-          <CustomSearchInput
-            placeholder="Search for chats"
-            onSearch={handleSearch}
-          />
-        </div>
+        {activeTab === 0 && <CustomChatsMenu chats={chats} />}
+        {activeTab === 1 && <CustomGroupChatsMenu chats={groupChats} />}
         <div className="overflow-auto">
-          <Tabs value={0}>
+          <Tabs value={activeTab}>
             <TabsHeader
               className="p-2 bg-transparent"
               indicatorProps={{
@@ -374,6 +294,7 @@ const Chats = () => {
               <Tab
                 key={0}
                 value={0}
+                onClick={() => setActiveTab(0)}
                 className="p-1 rounded-md text-base font-semibold text-primary-1"
               >
                 Private
@@ -381,6 +302,7 @@ const Chats = () => {
               <Tab
                 key={1}
                 value={1}
+                onClick={() => setActiveTab(1)}
                 className="p-1 rounded-md text-base font-semibold text-primary-1"
               >
                 Group
@@ -388,27 +310,53 @@ const Chats = () => {
             </TabsHeader>
             <TabsBody>
               <TabPanel key={0} value={0}>
-                <CustomChatsList
-                  chatsList={chatsList}
-                  activeChatId={activeChatId}
-                />
+                {chatsLoaded ? (
+                  <CustomChatsList chats={chats} activeChatId={activeChatId} />
+                ) : (
+                  <LoadIndicator />
+                )}
               </TabPanel>
               <TabPanel key={1} value={1}>
-                <CustomGroupChatsList
-                  groupChatsList={groupChatsList}
-                  activeChatId={activeChatId}
-                />
+                {groupChatsLoaded ? (
+                  <CustomGroupChatsList
+                    groupChats={groupChats}
+                    activeChatId={activeChatId}
+                  />
+                ) : (
+                  <LoadIndicator />
+                )}
               </TabPanel>
             </TabsBody>
           </Tabs>
         </div>
       </div>
       <div className="w-3/4">
-        <CustomChat
-          chatAvatarURL={activeChatAvatarURL}
-          chatDisplayName={activeChatDisplayName}
-          chatDocRef={activeChatDocRef}
-        />
+        {activeChatId ? (
+          activeChat || activeGroupChat ? (
+            activeChat ? (
+              <CustomChat key={activeChatKey} chat={activeChat} />
+            ) : (
+              <CustomGroupChat
+                key={activeGroupChatKey}
+                chat={activeGroupChat}
+              />
+            )
+          ) : (
+            <LoadIndicator />
+          )
+        ) : (
+          <div className="flex flex-col w-full h-full items-center justify-center">
+            <ChatBubbleOvalLeftEllipsisIcon className="h-44 w-44 text-primary-2" />
+            <CursorArrowRippleIcon className="h-36 w-36 -mt-24 ml-20 text-text-2" />
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-bold text-text-2"
+            >
+              No chat selected
+            </Typography>
+          </div>
+        )}
       </div>
     </div>
   );

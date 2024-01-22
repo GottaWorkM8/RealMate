@@ -18,12 +18,16 @@ import {
   BellIcon as BellIconSolid,
 } from "@heroicons/react/24/solid";
 import Headroom from "react-headroom";
-import logo from "../../assets/icon-circle.png";
+import logo from "assets/icon-circle.png";
 import CustomNotificationMenu from "./CustomNotificationMenu";
 import { useNavigate, useLocation } from "react-router-dom";
-import CustomSearchInput from "components/CustomSearchInput";
-import { db } from "../../api/firebase";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import {
+  getGroupKeywordSetsData,
+  getGroupProfileData,
+  getUserKeywordSetsData,
+  getUserProfileData,
+} from "apis/firebase";
+import CustomNavbarSearchInput from "components/inputs/CustomNavbarSearchInput";
 
 const CustomNavbar = () => {
   // NAVIGATION TO OTHER PAGES
@@ -71,62 +75,51 @@ const CustomNavbar = () => {
 
   useEffect(() => {
     const path = location.pathname;
-    switch (path) {
-      case "/":
-        setActiveTab(0);
-        break;
-      case "/chats":
-        setActiveTab(1);
-        break;
-      case "/friends":
-        setActiveTab(2);
-        break;
-      case "/groups":
-        setActiveTab(3);
-        break;
-      case "/notifications":
-        setActiveTab(4);
-        break;
-      default:
-        setActiveTab(null);
-        break;
+    if (path.startsWith("/chats")) {
+      setActiveTab(1);
+    } else if (path.startsWith("/friends")) {
+      setActiveTab(2);
+    } else if (path.startsWith("/groups")) {
+      setActiveTab(3);
+    } else if (path.startsWith("/notifications")) {
+      setActiveTab(4);
+    } else if (path.startsWith("/profile")) {
+      setActiveTab(null);
+    } else if (path.startsWith("/")) {
+      setActiveTab(0);
+    } else {
+      setActiveTab(null);
     }
   }, [location.pathname]);
 
   // SEARCHING FOR USERS AND GROUPS
-  const [searchedUsers, setSearchedUsers] = useState([]);
-  const [searchedGroups, setSearchedGroups] = useState([]);
+  const [foundUsers, setFoundUsers] = useState([]);
+  const [foundGroups, setFoundGroups] = useState([]);
 
   const handleSearch = async (term) => {
-    const lcTerm = term.toLowerCase();
-    if (lcTerm.length > 0) {
-      // Search for users by keywords
-      const usersQuery = query(
-        collection(db, "users"),
-        where("keywords", "array-contains", lcTerm),
-        limit(3)
-      );
-      const usersSnapshot = await getDocs(usersQuery);
-      const users = usersSnapshot.docs.map((doc) => doc.data());
-      setSearchedUsers(users);
-      // Search for groups by keywords
-      // const groupsQuery = query(
-      //   collection(db, "groups"),
-      //   where("keywords", "array-contains", lcTerm),
-      //   limit(2)
-      // );
-      // const groupsSnapshot = await getDocs(groupsQuery);
-      // const groups = groupsSnapshot.docs.map((doc) => doc.data());
-      // setSearchedGroups(groups);
-    } else {
-      setSearchedUsers([]);
+    const users = await getUserKeywordSetsData(term, 4);
+    const groups = await getGroupKeywordSetsData(term, 2);
+    const matchedUsers = [];
+    const matchedGroups = [];
+    for (const user of users) {
+      const userProfile = await getUserProfileData(user.id);
+      if (userProfile) matchedUsers.push(userProfile);
     }
+    for (const group of groups) {
+      const groupProfile = await getGroupProfileData(group.id);
+      if (groupProfile) matchedGroups.push(groupProfile);
+    }
+    setFoundUsers(matchedUsers);
+    setFoundGroups(matchedGroups);
   };
 
-  useEffect(() => {
-    console.log("Searched users: " + searchedUsers.length);
-    // console.log("Searched groups: " + searchedGroups.length);
-  }, [searchedUsers, searchedGroups]);
+  // HANDLING USER AND GROUP RESULT CLICK
+  const handleUserResultClick = (userId) => {
+    navigate(`/profile/user/${userId}`);
+  };
+  const handleGroupResultClick = (groupId) => {
+    navigate(`/profile/group/${groupId}`);
+  };
 
   return (
     <Headroom pin={desktopMode}>
@@ -143,18 +136,21 @@ const CustomNavbar = () => {
           >
             <img className="h-full" src={logo} alt="" />
           </button>
-          <CustomSearchInput
-            placeholder="Search"
+          <CustomNavbarSearchInput
+            placeholder="Search RealMate"
             onSearch={handleSearch}
-            results={searchedUsers}
+            userResults={foundUsers}
+            groupResults={foundGroups}
+            onUserResultClick={handleUserResultClick}
+            onGroupResultClick={handleGroupResultClick}
           />
         </div>
         <div className="hidden md:flex items-center w-1/3 justify-center space-x-2">
-          <Tooltip content="Home" className="bg-tooltip/80">
+          <Tooltip content="Home" className="bg-tooltip/90">
             <IconButton
               onClick={() => handleTabClick(0)}
               className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-                activeTab === 0 ? "ring ring-primary-1" : ""
+                activeTab === 0 && "ring ring-primary-1"
               } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 0 ? (
@@ -164,11 +160,11 @@ const CustomNavbar = () => {
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip content="Chats" className="bg-tooltip/80">
+          <Tooltip content="Chats" className="bg-tooltip/90">
             <IconButton
               onClick={() => handleTabClick(1)}
               className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-                activeTab === 1 ? "ring ring-primary-1" : ""
+                activeTab === 1 && "ring ring-primary-1"
               } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 1 ? (
@@ -178,11 +174,11 @@ const CustomNavbar = () => {
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip content="Friends" className="bg-tooltip/80">
+          <Tooltip content="Friends" className="bg-tooltip/90">
             <IconButton
               onClick={() => handleTabClick(2)}
               className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-                activeTab === 2 ? "ring ring-primary-1" : ""
+                activeTab === 2 && "ring ring-primary-1"
               } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 2 ? (
@@ -192,11 +188,11 @@ const CustomNavbar = () => {
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip content="Groups" className="bg-tooltip/80">
+          <Tooltip content="Groups" className="bg-tooltip/90">
             <IconButton
               onClick={() => handleTabClick(3)}
               className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-                activeTab === 3 ? "ring ring-primary-1" : ""
+                activeTab === 3 && "ring ring-primary-1"
               } bg-transparent hover:bg-secondary-4`}
             >
               {activeTab === 3 ? (
@@ -220,7 +216,7 @@ const CustomNavbar = () => {
           <IconButton
             onClick={() => handleTabClick(0)}
             className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-              activeTab === 0 ? "ring ring-primary-1" : ""
+              activeTab === 0 && "ring ring-primary-1"
             } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 0 ? (
@@ -232,7 +228,7 @@ const CustomNavbar = () => {
           <IconButton
             onClick={() => handleTabClick(1)}
             className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-              activeTab === 1 ? "ring ring-primary-1" : ""
+              activeTab === 1 && "ring ring-primary-1"
             } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 1 ? (
@@ -244,7 +240,7 @@ const CustomNavbar = () => {
           <IconButton
             onClick={() => handleTabClick(2)}
             className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-              activeTab === 2 ? "ring ring-primary-1" : ""
+              activeTab === 2 && "ring ring-primary-1"
             } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 2 ? (
@@ -256,7 +252,7 @@ const CustomNavbar = () => {
           <IconButton
             onClick={() => handleTabClick(3)}
             className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-              activeTab === 3 ? "ring ring-primary-1" : ""
+              activeTab === 3 && "ring ring-primary-1"
             } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 3 ? (
@@ -268,7 +264,7 @@ const CustomNavbar = () => {
           <IconButton
             onClick={() => handleTabClick(4)}
             className={`max-w-none max-h-none w-full h-full !shadow-sm ring-1 ring-secondary-1 ${
-              activeTab === 4 ? "ring ring-primary-1" : ""
+              activeTab === 4 && "ring ring-primary-1"
             } bg-transparent hover:bg-secondary-4`}
           >
             {activeTab === 4 ? (

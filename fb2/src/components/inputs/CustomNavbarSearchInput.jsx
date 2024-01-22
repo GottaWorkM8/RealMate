@@ -10,7 +10,14 @@ import {
 } from "@material-tailwind/react";
 import React, { useEffect, useState } from "react";
 
-const CustomSearchInput = ({ placeholder, onSearch, results }) => {
+const CustomNavbarSearchInput = ({
+  placeholder,
+  onSearch,
+  userResults,
+  groupResults,
+  onUserResultClick,
+  onGroupResultClick,
+}) => {
   // HANDLING SEARCH
   const [term, setTerm] = useState("");
   const [searching, setSearching] = useState(false);
@@ -32,16 +39,22 @@ const CustomSearchInput = ({ placeholder, onSearch, results }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   // HANDLING RESULTS
-  const [items, setItems] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [groups, setGroups] = useState([]);
 
-  const handleClick = (itemId) => {
-    const item = items.find((item) => item.id === itemId);
-    // onResultClick(item);
+  const handleUserClick = (userId) => {
+    setTerm("");
+    onUserResultClick(userId);
+  };
+  const handleGroupClick = (groupId) => {
+    setTerm("");
+    onGroupResultClick(groupId);
   };
 
   useEffect(() => {
-    if (results) setItems(results);
-  }, [results]);
+    if (userResults) setUsers(userResults);
+    if (groupResults) setGroups(groupResults);
+  }, [userResults, groupResults]);
 
   useEffect(() => {
     setMenuOpen(term.length > 0);
@@ -52,7 +65,7 @@ const CustomSearchInput = ({ placeholder, onSearch, results }) => {
       <div className="flex gap-1">
         <IconButton
           onClick={() => setTerm("")}
-          className="h-9 shadow-none bg-transparent hover:bg-secondary-4"
+          className="h-10 shadow-none bg-transparent hover:bg-secondary-4"
           hidden={!term}
         >
           <ArrowLeftIcon className="h-6 w-6 text-text-1" />
@@ -69,19 +82,42 @@ const CustomSearchInput = ({ placeholder, onSearch, results }) => {
             className: "hidden",
           }}
           containerProps={{
-            className: "min-w-[10rem] h-9 bg-secondary-4 rounded-lg",
+            className: "min-w-[10rem] h-10 bg-container rounded-lg",
           }}
           icon={<MagnifyingGlassIcon />}
         />
       </div>
-      <div className="wrapper relative" hidden={!menuOpen}>
+      <div className="wrapper relative z-50" hidden={!menuOpen}>
         <div className="absolute top-3 left-0 right-0 py-1 border rounded-md bg-background">
-          <List className="p-0" hidden={!items.length}>
-            {items.map(({ uid, displayName, avatarURL }) => {
+          <List className="p-0" hidden={!users.length}>
+            {users.map(({ id, displayName, avatarURL }) => {
               return (
                 <ListItem
-                  key={uid}
-                  onClick={() => handleClick(uid)}
+                  key={id}
+                  onClick={() => handleUserClick(id)}
+                  className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+                >
+                  <Avatar
+                    size="sm"
+                    alt=""
+                    src={avatarURL}
+                    className="border border-secondary-1 bg-avatar"
+                  />
+                  <div className="flex flex-col gap-1">
+                    <Typography className="text-sm font-semibold text-text-1">
+                      {displayName}
+                    </Typography>
+                  </div>
+                </ListItem>
+              );
+            })}
+          </List>
+          <List className="p-0" hidden={!groups.length}>
+            {groups.map(({ id, displayName, avatarURL }) => {
+              return (
+                <ListItem
+                  key={id}
+                  onClick={() => handleGroupClick(id)}
                   className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
                 >
                   <Avatar
@@ -107,7 +143,7 @@ const CustomSearchInput = ({ placeholder, onSearch, results }) => {
             />
             <Typography
               className={`${
-                !items.length && !searching ? "" : "hidden"
+                !users.length && !groups.length && !searching ? "" : "hidden"
               } text-sm font-normal text-text-3`}
             >
               No results found
@@ -119,4 +155,4 @@ const CustomSearchInput = ({ placeholder, onSearch, results }) => {
   );
 };
 
-export default CustomSearchInput;
+export default CustomNavbarSearchInput;

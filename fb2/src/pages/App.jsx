@@ -12,7 +12,12 @@ import Notifications from "tabs/Notifications";
 import PrivateRoute from "routes/PrivateRoute";
 import "index.css";
 import PublicRoute from "routes/PublicRoute";
-import Profiles from "tabs/UserProfiles";
+import UserProfile from "tabs/UserProfile";
+import GroupProfile from "tabs/GroupProfile";
+import UserProfileEdit from "tabs/UserEdit";
+import UserProfilePrefs from "tabs/UserPrefs";
+import GroupProfileEdit from "tabs/GroupEdit";
+import GroupProfilePrefs from "tabs/GroupPrefs";
 
 const App = () => {
   return (
@@ -35,8 +40,21 @@ const App = () => {
           <Route path="groups" element={<Groups />} />
           <Route path="groups/:category" element={<Groups />} />
           <Route path="notifications" element={<Notifications />} />
-          <Route path="profiles/users/:userId" element={<Profiles />} />
-          <Route path="profiles/groups/:groupId" element={<Profiles />} />
+          <Route path="profile/user/:userId" element={<UserProfile />} />
+          <Route
+            path="profile/user/edit/:userId"
+            element={<UserProfileEdit />}
+          />
+          <Route
+            path="profile/user/settings/:userId"
+            element={<UserProfilePrefs />}
+          />
+          <Route path="profile/group/:groupId" element={<GroupProfile />} />
+          <Route path="profile/group/:groupId" element={<GroupProfileEdit />} />
+          <Route
+            path="profile/group/:groupId"
+            element={<GroupProfilePrefs />}
+          />
         </Route>
         <Route
           path="register"

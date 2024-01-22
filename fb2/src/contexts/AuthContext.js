@@ -1,5 +1,13 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth, db, storage } from "../api/firebase";
+import {
+  auth,
+  storage,
+  setUserAbout,
+  setUserKeywordSet,
+  setUserPrefs,
+  setUserProfile,
+  updateUserLastActive,
+} from "../apis/firebase";
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
@@ -11,7 +19,7 @@ import {
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
+import { generateUserKeywords } from "utils";
 
 const AuthContext = React.createContext(undefined);
 
@@ -26,19 +34,6 @@ export const AuthProvider = ({ children }) => {
   // STATES
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // USER SEARCH KEYWORDS
-  const generateKeywords = (lastName, fullName) => {
-    const lName = lastName.toLowerCase();
-    const fName = fullName.toLowerCase();
-    const keywords = [];
-    for (let i = 1; i <= lName.length; i++)
-      keywords.push(lName.substring(0, i));
-    for (let i = 1; i <= fName.length; i++)
-      keywords.push(fName.substring(0, i));
-
-    return keywords;
-  };
 
   // SIGN UP
   const register = async (firstName, lastName, email, password, birthdate) => {
@@ -55,32 +50,34 @@ export const AuthProvider = ({ children }) => {
         const user = userCredential.user;
         const fullName = firstName + " " + lastName;
 
-        const fileRef = ref(storage, "avatars/user.png");
-        const avatarDownloadURL = await getDownloadURL(fileRef);
+        const avatarDownloadURL = await getDownloadURL(
+          ref(storage, "avatars/user.png")
+        );
         await updateProfile(user, {
           displayName: fullName,
           photoURL: avatarDownloadURL,
         });
         console.log("User profile updated");
 
-        const keywords = generateKeywords(lastName, fullName);
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          displayName: fullName,
-          firstName: firstName,
-          lastName: lastName,
-          email: email,
-          birthdate: new Date(birthdate),
-          creationDate: new Date(),
-          avatarURL: avatarDownloadURL,
-          keywords: keywords,
-        });
-        console.log("Document added with ID: ", user.uid);
+        const keywords = generateUserKeywords(firstName, lastName);
+        await setUserKeywordSet(user.uid, keywords);
+        await setUserProfile(user.uid, fullName, avatarDownloadURL);
+        await setUserPrefs(user.uid);
+        const bgDownloadURL = await getDownloadURL(
+          ref(storage, "backgrounds/background.jpg")
+        );
+        await setUserAbout(
+          user.uid,
+          firstName,
+          lastName,
+          email,
+          birthdate,
+          bgDownloadURL
+        );
+        console.log("Documents added with ID: ", user.uid);
 
-        // await sendEmailVerification(user);
-        // console.log("Email Verification sent");
-
-        console.log(user);
+        await sendEmailVerification(user);
+        console.log("Email Verification message sent");
       }
     } catch (error) {
       throw error;
@@ -120,11 +117,16 @@ export const AuthProvider = ({ children }) => {
 
   // USER STATE OBSERVER
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       setLoading(false);
+      if (user) {
+        const updateLastActiveInterval = setInterval(async () => {
+          await updateUserLastActive(user.uid);
+        }, 60000);
+        return () => clearInterval(updateLastActiveInterval);
+      }
     });
-
     return unsubscribe;
   }, []);
 

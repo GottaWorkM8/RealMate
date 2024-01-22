@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Based on color palettes from https://www.material-tailwind.com/docs/react/colors
+ * Except background and container colors
+ */
 @layer base {
   :root {
     --color-primary1: 0 150 136;
@@ -17,6 +21,7 @@
     --color-text3: 96 125 139;
     --color-text4: 120 144 156;
     --color-background: 255 255 255;
+    --color-container: 236 239 241;
     --color-tooltip: 38 50 56;
     --color-avatar: 236 239 241;
   }
@@ -32,7 +37,8 @@
       --color-text1: 236 239 241;
       --color-text2: 207 216 220;
       --color-text3: 176 190 197;
-      --color-background: 33 33 33;
+      --color-background: 26 34 38;
+      --color-container: 17 22 25;
     }
   }
 }
@@ -98,4 +104,21 @@ select {
 
 .GifPickerReact .gpr-search-container input.gpr-search:focus {
   border: 2px solid rgb(var(--color-primary1)) !important;
+}
+
+.MuiPaper-root {
+  background-color: rgb(var(--color-background)) !important;
+}
+
+.MuiTypography-root,
+.MuiInputBase-root,
+.MuiPickersCalendarHeader-root,
+.MuiButtonBase-root,
+.MuiPickersYear-root,
+.MuiPickersMonth-root {
+  color: rgb(var(--color-text1)) !important;
+}
+
+.Mui-disabled {
+  color: rgb(var(--color-text4)) !important;
 }

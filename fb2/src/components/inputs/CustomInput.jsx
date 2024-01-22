@@ -16,9 +16,8 @@ const CustomInput = ({ placeholder, value, onChange, onBlur }) => {
         className: "hidden",
       }}
       containerProps={{
-        className: "min-w-[10rem] h-9 bg-secondary-4 rounded-lg",
+        className: "min-w-[10rem] h-10 bg-container rounded-lg",
       }}
-      crossOrigin={undefined}
     />
   );
 };
