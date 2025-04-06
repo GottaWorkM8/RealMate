@@ -15,11 +15,9 @@ import {
   limit,
   deleteDoc,
   increment,
-  onSnapshot,
   orderBy,
 } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
-import { useAuth } from "contexts/AuthContext";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCw441pGntBTNbKuH5HE6tJTN8rnzkC3jE",
@@ -43,7 +41,7 @@ export default app;
 
 // TEMPLATE FUNCTIONS
 const getKeywordSetsData = async (userId, col, subcol, term, max) => {
-  if (term > 0) {
+  if (term.length > 0) {
     const lcTerm = term.toLowerCase();
     const documsQuery = query(
       collection(db, col, userId, subcol),
@@ -288,6 +286,10 @@ export const getGroupChatData = async (chatId) => {
   return await getEntityData(chatId, "groupChats");
 };
 
+export const getGroupChatKeywordSetData = async (chatId) => {
+  return await getEntityData(chatId, "groupChatKeywordSets");
+};
+
 export const getGroupChatMembersData = async (chatId) => {
   return await getEntityData(chatId, "groupChatMembers");
 };
@@ -409,6 +411,12 @@ export const isUserFriendInviteReceived = async (userId, otherUserId) => {
   return docum.exists();
 };
 
+export const isUserGroupAdmin = async (userId, groupId) => {
+  const docum = await getDoc(doc(db, "groupMembers", groupId));
+  const adminId = docum.data().admin;
+  return adminId === userId;
+};
+
 export const isUserGroupMember = async (userId, groupId) => {
   const docum = await getDoc(doc(db, "userGroups", userId, "groups", groupId));
   return docum.exists();
@@ -420,7 +428,7 @@ export const isUserGroupInviteSent = async (userId, groupId) => {
     where("group", "==", groupId)
   );
   const docums = await getDocs(documsQuery);
-  return docums[0].exists();
+  return docums.size > 0;
 };
 
 export const isUserGroupInviteReceived = async (userId, groupId) => {
@@ -429,7 +437,8 @@ export const isUserGroupInviteReceived = async (userId, groupId) => {
     where("group", "==", groupId)
   );
   const docums = await getDocs(documsQuery);
-  return docums[0].exists();
+  if (docums.size) return true;
+  return docums.size > 0;
 };
 
 // ADDING
@@ -486,6 +495,13 @@ export const setUserAbout = async (
 };
 
 // FRIENDS
+export const setUserFriendKeywordSet = async (userId, friendId, keywords) => {
+  await setDoc(doc(db, "userFriends", userId, "friendKeywordSets", friendId), {
+    id: friendId,
+    keywords: keywords,
+  });
+};
+
 export const setUserFriend = async (userId, otherUserId) => {
   const startDate = new Date();
   await setDoc(doc(db, "userFriends", userId, "friends", otherUserId), {
@@ -501,20 +517,12 @@ export const setUserFriend = async (userId, otherUserId) => {
 
   const userKeywordSet = await getUserKeywordSetData(userId);
   const otherUserKeywordSet = await getUserKeywordSetData(otherUserId);
-  await setDoc(
-    doc(db, "userFriends", userId, "friendKeywordSets", otherUserId),
-    {
-      id: otherUserId,
-      keywords: otherUserKeywordSet.keywords,
-    }
+  await setUserFriendKeywordSet(
+    userId,
+    otherUserId,
+    otherUserKeywordSet.keywords
   );
-  await setDoc(
-    doc(db, "userFriends", otherUserId, "friendKeywordSets", userId),
-    {
-      id: userId,
-      keywords: userKeywordSet.keywords,
-    }
-  );
+  await setUserFriendKeywordSet(otherUserId, userId, userKeywordSet.keywords);
 
   await updateDoc(doc(db, "userAbouts", userId), {
     friendCount: increment(1),
@@ -534,6 +542,157 @@ export const setUserFriendInvite = async (userId, otherUserId) => {
   });
   await setDoc(doc(db, "userFriendInvites", otherUserId, "incoming", userId), {
     id: userId,
+    sendDate: sendDate,
+  });
+};
+
+// GROUPS
+export const setGroupKeywordSet = async (groupId, keywords) => {
+  await setDoc(doc(db, "groupKeywordSets", groupId), {
+    id: groupId,
+    keywords: keywords,
+    isVisible: true,
+    isSafeForWork: true,
+  });
+};
+
+export const setUserGroupKeywordSet = async (userId, groupId, keywords) => {
+  await setDoc(doc(db, "userGroups", userId, "groupKeywordSets", groupId), {
+    id: groupId,
+    keywords: keywords,
+  });
+};
+
+export const setGroupProfile = async (groupId, name, avatarFile) => {
+  let storageRef;
+  if (avatarFile) {
+    storageRef = ref(storage, `avatars/groups/${groupId}`);
+    await uploadBytes(storageRef, avatarFile);
+  } else storageRef = ref(storage, "avatars/groups/group.png");
+  const avatarDownloadURL = await getDownloadURL(storageRef);
+  await setDoc(doc(db, "groupProfiles", groupId), {
+    id: groupId,
+    displayName: name,
+    avatarURL: avatarDownloadURL,
+  });
+};
+
+export const setGroupPrefs = async (groupId) => {
+  await setDoc(doc(db, "groupPrefs", groupId), {
+    id: groupId,
+    isPublic: true,
+    isSafeForWork: true,
+  });
+};
+
+export const setGroupAbout = async (groupId, description, backgroundURL) => {
+  await setDoc(doc(db, "groupAbouts", groupId), {
+    id: groupId,
+    description: description,
+    memberCount: 0,
+    backgroundURL: backgroundURL,
+    creationDate: new Date(),
+  });
+};
+
+export const setUserGroup = async (groupId, userId, isFavorite) => {
+  await setDoc(doc(db, "userGroups", userId, "groups", groupId), {
+    id: groupId,
+    joinDate: new Date(),
+    isFavorite: isFavorite,
+  });
+  const groupKeywordSet = await getGroupKeywordSetData(groupId);
+  await setUserGroupKeywordSet(userId, groupId, groupKeywordSet.keywords);
+  await updateGroupMembers(groupId, userId);
+};
+
+export const setGroupMembers = async (groupId, adminId) => {
+  await setDoc(doc(db, "groupMembers", groupId), {
+    id: groupId,
+    admin: adminId,
+    members: [],
+  });
+};
+
+export const setGroup = async (
+  userId,
+  memberIds,
+  name,
+  avatarFile,
+  description,
+  keywords
+) => {
+  const docum = await addDoc(collection(db, "groupKeywordSets"), {
+    id: null,
+    keywords: keywords,
+    isVisible: true,
+    isSafeForWork: true,
+  });
+  await updateDoc(doc(db, "groupKeywordSets", docum.id), {
+    id: docum.id,
+  });
+
+  await setGroupProfile(docum.id, name, avatarFile);
+  await setGroupPrefs(docum.id);
+  const bgDownloadURL = await getDownloadURL(
+    ref(storage, "backgrounds/groups/background.jpg")
+  );
+  await setGroupAbout(docum.id, description, bgDownloadURL);
+  await setGroupMembers(docum.id, userId);
+  await setGroupInvites(userId, docum.id, memberIds);
+  await setUserGroup(docum.id, userId, true);
+
+  return docum.id;
+};
+
+const setGroupInvites = async (userId, groupId, otherUserIds) => {
+  const sendDate = new Date();
+  for (const otherUserId of otherUserIds) {
+    const docum = await addDoc(
+      collection(db, "userGroupInvites", userId, "outgoing"),
+      {
+        id: null,
+        group: groupId,
+        receiver: otherUserId,
+        sendDate: sendDate,
+      }
+    );
+    await updateDoc(doc(db, "userGroupInvites", userId, "outgoing", docum.id), {
+      id: docum.id,
+    });
+
+    await setDoc(
+      doc(db, "userGroupInvites", otherUserId, "incoming", docum.id),
+      {
+        id: docum.id,
+        group: groupId,
+        sender: userId,
+        sendDate: sendDate,
+      }
+    );
+  }
+};
+
+export const setUserGroupInvite = async (userId, groupId) => {
+  const group = await getGroupMembersData(groupId);
+  const sendDate = new Date();
+  const docum = await addDoc(
+    collection(db, "userGroupInvites", userId, "outgoing"),
+    {
+      id: null,
+      group: groupId,
+      receiver: group.admin,
+      sendDate: sendDate,
+    }
+  );
+  await updateDoc(doc(db, "userGroupInvites", userId, "outgoing", docum.id), {
+    id: docum.id,
+  });
+
+  await setDoc(doc(db, "userGroupInvites", group.admin, "incoming", docum.id), {
+    id: docum.id,
+    group: groupId,
+    sender: userId,
     sendDate: sendDate,
   });
 };
@@ -581,6 +740,90 @@ export const setChat = async (userId, partnerId) => {
   return docum.id;
 };
 
+// GROUP CHATS
+export const setGroupChatKeywordSet = async (chatId, keywords) => {
+  await setDoc(doc(db, "groupChatKeywordSets", chatId), {
+    id: chatId,
+    keywords: keywords,
+  });
+};
+
+export const setUserGroupChatKeywordSet = async (userId, chatId, keywords) => {
+  await setDoc(
+    doc(db, "userGroupChats", userId, "groupChatKeywordSets", chatId),
+    {
+      id: chatId,
+      keywords: keywords,
+    }
+  );
+};
+
+export const setGroupChatProfile = async (chatId, name, avatarFile) => {
+  let storageRef;
+  if (avatarFile) {
+    storageRef = ref(storage, `avatars/groupChats/${chatId}`);
+    await uploadBytes(storageRef, avatarFile);
+  } else storageRef = ref(storage, "avatars/groupChats/groupChat.png");
+  const avatarDownloadURL = await getDownloadURL(storageRef);
+  await setDoc(doc(db, "groupChatProfiles", chatId), {
+    id: chatId,
+    displayName: name,
+    avatarURL: avatarDownloadURL,
+  });
+};
+
+export const setUserGroupChat = async (chatId, userId) => {
+  const date = new Date();
+  await setDoc(doc(db, "userGroupChats", userId, "groupChats", chatId), {
+    id: chatId,
+    joinDate: date,
+    lastActive: date,
+    isMuted: false,
+  });
+  const groupChatKeywordSet = await getGroupChatKeywordSetData(chatId);
+  await setUserGroupChatKeywordSet(
+    userId,
+    chatId,
+    groupChatKeywordSet.keywords
+  );
+  await updateGroupChatMembers(chatId, userId);
+};
+
+export const setGroupChatMembers = async (chatId, adminId) => {
+  await setDoc(doc(db, "groupChatMembers", chatId), {
+    id: chatId,
+    admin: adminId,
+    members: [],
+  });
+};
+
+export const setGroupChat = async (
+  userId,
+  memberIds,
+  name,
+  avatarFile,
+  keywords
+) => {
+  const docum = await addDoc(collection(db, "groupChatKeywordSets"), {
+    id: null,
+    keywords: keywords,
+  });
+  await updateDoc(doc(db, "groupChatKeywordSets", docum.id), {
+    id: docum.id,
+  });
+  await setDoc(doc(db, "groupChats", docum.id), {
+    id: docum.id,
+    lastMessage: null,
+    creationDate: new Date(),
+  });
+  await setGroupChatProfile(docum.id, name, avatarFile);
+  await setGroupChatMembers(docum.id, userId);
+  await setUserGroupChat(docum.id, userId);
+  for (const memberId of memberIds) await setUserGroupChat(docum.id, memberId);
+
+  return docum.id;
+};
+
 // MESSAGES
 export const setChatMessage = async (chatId, userId, content) => {
   const docum = await addDoc(collection(db, "chats", chatId, "messages"), {
@@ -594,6 +837,22 @@ export const setChatMessage = async (chatId, userId, content) => {
   });
 
   await updateDoc(doc(db, "chats", chatId), {
+    lastMessage: docum.id,
+  });
+};
+
+export const setGroupChatMessage = async (chatId, userId, content) => {
+  const docum = await addDoc(collection(db, "groupChats", chatId, "messages"), {
+    id: null,
+    sender: userId,
+    content: content,
+    sendDate: new Date(),
+  });
+  await updateDoc(doc(db, "groupChats", chatId, "messages", docum.id), {
+    id: docum.id,
+  });
+
+  await updateDoc(doc(db, "groupChats", chatId), {
     lastMessage: docum.id,
   });
 };
@@ -613,14 +872,14 @@ export const updateUserChatLastActive = async (userId, chatId) => {
   });
 };
 
-export const updateUserFriendIsClose = async (userId, friendId, value) => {
-  await updateDoc(doc(db, "userFriends", userId, "friends", friendId), {
-    isClose: value,
+export const updateUserGroupChatLastActive = async (userId, chatId) => {
+  await updateDoc(doc(db, "userGroupChats", userId, "groupChats", chatId), {
+    lastActive: new Date(),
   });
 };
 
 export const updateUserProfileImage = async (user, file) => {
-  const storageRef = ref(storage, `avatars/${user.uid}`);
+  const storageRef = ref(storage, `avatars/users/${user.uid}`);
   await uploadBytes(storageRef, file);
   const avatarDownloadURL = await getDownloadURL(storageRef);
   await updateProfile(user, {
@@ -632,15 +891,73 @@ export const updateUserProfileImage = async (user, file) => {
 };
 
 export const updateUserBackgroundImage = async (userId, file) => {
-  const storageRef = ref(storage, `backgrounds/${userId}`);
+  const storageRef = ref(storage, `backgrounds/users/${userId}`);
   await uploadBytes(storageRef, file);
-  const backgroundDownloadURL = await getDownloadURL(storageRef);
+  const bgDownloadURL = await getDownloadURL(storageRef);
   await updateDoc(doc(db, "userAbouts", userId), {
-    backgroundURL: backgroundDownloadURL,
+    backgroundURL: bgDownloadURL,
+  });
+};
+
+// FRIENDS
+export const updateUserFriendIsClose = async (userId, friendId, value) => {
+  await updateDoc(doc(db, "userFriends", userId, "friends", friendId), {
+    isClose: value,
+  });
+};
+
+// GROUPS
+export const updateGroupProfileImage = async (groupId, file) => {
+  const storageRef = ref(storage, `avatars/groups/${groupId}`);
+  await uploadBytes(storageRef, file);
+  const avatarDownloadURL = await getDownloadURL(storageRef);
+  await updateDoc(doc(db, "groupProfiles", groupId), {
+    avatarURL: avatarDownloadURL,
+  });
+};
+
+export const updateGroupBackgroundImage = async (groupId, file) => {
+  const storageRef = ref(storage, `backgrounds/groups/${groupId}`);
+  await uploadBytes(storageRef, file);
+  const bgDownloadURL = await getDownloadURL(storageRef);
+  await updateDoc(doc(db, "groupAbouts", groupId), {
+    backgroundURL: bgDownloadURL,
+  });
+};
+
+export const updateUserGroupIsFavorite = async (userId, groupId, value) => {
+  await updateDoc(doc(db, "userGroups", userId, "groups", groupId), {
+    isFavorite: value,
+  });
+};
+
+const updateGroupMembers = async (groupId, memberId) => {
+  const group = await getGroupMembersData(groupId);
+  const updatedMembers = [...group.members, memberId];
+
+  await updateDoc(doc(db, "groupMembers", groupId), {
+    members: updatedMembers,
+  });
+
+  await updateDoc(doc(db, "groupAbouts", groupId), {
+    memberCount: increment(1),
+  });
+};
+
+// CHATS
+// GROUP CHATS
+const updateGroupChatMembers = async (chatId, memberId) => {
+  const groupChat = await getGroupChatMembersData(chatId);
+  const updatedMembers = [...groupChat.members, memberId];
+
+  await updateDoc(doc(db, "groupChatMembers", chatId), {
+    members: updatedMembers,
   });
 };
 
 // DELETING
+
+// USERS
 
 // FRIENDS
 export const deleteUserFriend = async (userId, friendId) => {
@@ -670,6 +987,37 @@ export const deleteUserFriendInvite = async (userId, otherUserId) => {
     doc(db, "userFriendInvites", otherUserId, "incoming", userId)
   );
 };
+
+// GROUPS
+export const deleteUserGroup = async (userId, groupId) => {
+  await deleteDoc(doc(db, "userGroups", userId, "groups", groupId));
+  await deleteDoc(doc(db, "userGroups", userId, "groupKeywordSets", groupId));
+
+  await deleteGroupMember(userId, groupId);
+};
+
+const deleteGroupMember = async (userId, groupId) => {
+  const group = await getGroupMembersData(groupId);
+  const updatedMembers = group.members.filter(
+    (memberId) => memberId !== userId
+  );
+  await updateDoc(doc(db, "groupMembers", groupId), {
+    members: updatedMembers,
+  });
+
+  await updateDoc(doc(db, "groupAbouts", groupId), {
+    memberCount: increment(-1),
+  });
+};
+
+export const deleteUserGroupInvite = async (userId, groupId) => {
+  const group = await getGroupMembersData(groupId);
+  await deleteDoc(doc(db, "userGroupInvites", userId, "outgoing", group.admin));
+  await deleteDoc(doc(db, "userGroupInvites", group.admin, "incoming", userId));
+};
+
+// CHATS
+// GROUP CHATS
 
 // MESSAGES
 export const deleteChatMessage = async (chatId, messageId) => {

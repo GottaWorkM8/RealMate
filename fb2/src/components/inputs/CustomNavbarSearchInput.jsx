@@ -89,52 +89,62 @@ const CustomNavbarSearchInput = ({
       </div>
       <div className="wrapper relative z-50" hidden={!menuOpen}>
         <div className="absolute top-3 left-0 right-0 py-1 border rounded-md bg-background">
-          <List className="p-0" hidden={!users.length}>
-            {users.map(({ id, displayName, avatarURL }) => {
-              return (
-                <ListItem
-                  key={id}
-                  onClick={() => handleUserClick(id)}
-                  className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
-                >
-                  <Avatar
-                    size="sm"
-                    alt=""
-                    src={avatarURL}
-                    className="border border-secondary-1 bg-avatar"
-                  />
-                  <div className="flex flex-col gap-1">
-                    <Typography className="text-sm font-semibold text-text-1">
-                      {displayName}
-                    </Typography>
-                  </div>
-                </ListItem>
-              );
-            })}
-          </List>
-          <List className="p-0" hidden={!groups.length}>
-            {groups.map(({ id, displayName, avatarURL }) => {
-              return (
-                <ListItem
-                  key={id}
-                  onClick={() => handleGroupClick(id)}
-                  className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
-                >
-                  <Avatar
-                    size="sm"
-                    alt=""
-                    src={avatarURL}
-                    className="border border-secondary-1 bg-avatar"
-                  />
-                  <div className="flex flex-col gap-1">
-                    <Typography className="text-sm font-semibold text-text-1">
-                      {displayName}
-                    </Typography>
-                  </div>
-                </ListItem>
-              );
-            })}
-          </List>
+          <div hidden={!users.length}>
+            <Typography className="px-2 text-sm font-semibold text-text-2">
+              Users
+            </Typography>
+            <List className="p-0">
+              {users.map(({ id, displayName, avatarURL }) => {
+                return (
+                  <ListItem
+                    key={id}
+                    onClick={() => handleUserClick(id)}
+                    className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+                  >
+                    <Avatar
+                      size="sm"
+                      alt=""
+                      src={avatarURL}
+                      className="border border-secondary-1 bg-avatar"
+                    />
+                    <div className="flex flex-col gap-1">
+                      <Typography className="text-sm font-semibold text-text-1">
+                        {displayName}
+                      </Typography>
+                    </div>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </div>
+          <div hidden={!groups.length}>
+            <Typography className="px-2 text-sm font-semibold text-text-2">
+              Groups
+            </Typography>
+            <List className="p-0">
+              {groups.map(({ id, displayName, avatarURL }) => {
+                return (
+                  <ListItem
+                    key={id}
+                    onClick={() => handleGroupClick(id)}
+                    className="flex items-center gap-4 py-2 pl-2 pr-8 hover:bg-secondary-4 focus:bg-secondary-4 active:bg-secondary-4"
+                  >
+                    <Avatar
+                      size="sm"
+                      alt=""
+                      src={avatarURL}
+                      className="border border-secondary-1 bg-avatar"
+                    />
+                    <div className="flex flex-col gap-1">
+                      <Typography className="text-sm font-semibold text-text-1">
+                        {displayName}
+                      </Typography>
+                    </div>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </div>
           <div className="flex justify-center">
             <ArrowPathIcon
               className={`${

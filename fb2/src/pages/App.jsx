@@ -1,23 +1,23 @@
 // IMPORTS
+import "index.css";
 import React from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
+import PrivateRoute from "routes/PrivateRoute";
+import PublicRoute from "routes/PublicRoute";
 import Register from "pages/Register";
 import Login from "pages/Login";
-import CustomNavbar from "components/navbar/CustomNavbar";
 import Home from "tabs/Home";
 import Chats from "tabs/Chats";
 import Friends from "tabs/Friends";
 import Groups from "tabs/Groups";
 import Notifications from "tabs/Notifications";
-import PrivateRoute from "routes/PrivateRoute";
-import "index.css";
-import PublicRoute from "routes/PublicRoute";
 import UserProfile from "tabs/UserProfile";
 import GroupProfile from "tabs/GroupProfile";
 import UserProfileEdit from "tabs/UserEdit";
 import UserProfilePrefs from "tabs/UserPrefs";
 import GroupProfileEdit from "tabs/GroupEdit";
 import GroupProfilePrefs from "tabs/GroupPrefs";
+import CustomNavbar from "components/navbar/CustomNavbar";
 
 const App = () => {
   return (

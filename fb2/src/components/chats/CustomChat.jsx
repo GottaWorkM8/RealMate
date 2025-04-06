@@ -103,7 +103,6 @@ const CustomChat = ({ chat }) => {
       const timeDiffSecs =
         messages[i].sendDate - currentGroup[lastMessageIndex].sendDate;
       const timeDiffMins = timeDiffSecs / 60;
-
       if (
         timeDiffMins > maxTimeDiffMins ||
         messages[i].sender !== currentGroup[lastMessageIndex].sender
@@ -138,17 +137,14 @@ const CustomChat = ({ chat }) => {
         messageGroups[lastGroupIndex].messages.length - 1;
       const lastMessage =
         messageGroups[lastGroupIndex].messages[lastMessageIndex];
-      const timeDiffMils = message.sendDate - lastMessage.sendDate;
-      const timeDiffMins = timeDiffMils / (60 * 1000);
-      console.log("Time Diff: " + timeDiffMins);
+      const timeDiffSecs = message.sendDate - lastMessage.sendDate;
+      const timeDiffMins = timeDiffSecs / 60;
       if (
         timeDiffMins > maxTimeDiffMins ||
         message.sender !== lastMessage.sender
       ) {
-        console.log(1);
         addFirstGroupMessage(message);
       } else {
-        console.log(2);
         setMessageGroups((prevMessageGroups) => {
           const updatedGroups = [...prevMessageGroups];
           updatedGroups[lastGroupIndex] = {
@@ -158,10 +154,7 @@ const CustomChat = ({ chat }) => {
           return updatedGroups;
         });
       }
-    } else {
-      console.log(3);
-      addFirstGroupMessage(message);
-    }
+    } else addFirstGroupMessage(message);
   };
 
   const removeGroupedMessage = async (messageId) => {
@@ -212,8 +205,10 @@ const CustomChat = ({ chat }) => {
           });
         } else {
           const messages = snapshot.docs.map((docum) => docum.data());
-          const groupedMessages = await groupMessages(messages);
-          await setMessageGroups(groupedMessages);
+          if (messages.length) {
+            const groupedMessages = await groupMessages(messages);
+            await setMessageGroups(groupedMessages);
+          }
           setMessagesLoaded(true);
         }
         updateUserChatLastActive(currentUser.uid, chat.id);
@@ -288,6 +283,8 @@ const CustomChat = ({ chat }) => {
   const filesInputRef = useRef(null);
 
   const handleFilesClick = () => {
+    setGifsOpen(false);
+    setEmojisOpen(false);
     filesInputRef.current.click();
   };
   const handleFilesChange = (event) => {
@@ -309,14 +306,23 @@ const CustomChat = ({ chat }) => {
   const [gifsOpen, setGifsOpen] = useState(false);
 
   const handleGifsClick = () => {
-    setGifsOpen(true);
+    setEmojisOpen(false);
+    setGifsOpen(!gifsOpen);
+  };
+  const handleGifClick = (gif) => {
+    setGifsOpen(false);
   };
 
   // PICKING EMOJIS
   const [emojisOpen, setEmojisOpen] = useState(false);
 
   const handleEmojisClick = () => {
-    setEmojisOpen(true);
+    setGifsOpen(false);
+    setEmojisOpen(!emojisOpen);
+  };
+  const handleEmojiClick = (emoji) => {
+    setEmojisOpen(false);
+    setText(textareaRef.current.value + emoji.emoji);
   };
 
   return (
@@ -340,26 +346,33 @@ const CustomChat = ({ chat }) => {
           className="w-full h-full p-2 overflow-auto"
         >
           {messagesLoaded ? (
-            messageGroups.map(
-              ({
-                id,
-                messages,
-                sender,
-                senderAvatarURL,
-                senderDisplayName,
-                sendDate,
-              }) => {
-                return (
-                  <CustomChatMsgGroup
-                    key={id}
-                    messages={messages}
-                    sender={sender}
-                    senderAvatarURL={senderAvatarURL}
-                    senderDisplayName={senderDisplayName}
-                    sendDate={sendDate}
-                  />
-                );
-              }
+            messageGroups.length ? (
+              messageGroups.map(
+                ({
+                  id,
+                  messages,
+                  sender,
+                  senderAvatarURL,
+                  senderDisplayName,
+                  sendDate,
+                }) => {
+                  return (
+                    <CustomChatMsgGroup
+                      key={id}
+                      messages={messages}
+                      sender={sender}
+                      senderAvatarURL={senderAvatarURL}
+                      senderDisplayName={senderDisplayName}
+                      sendDate={sendDate}
+                    />
+                  );
+                }
+              )
+            ) : (
+              <div className="flex flex-col h-full p-2 justify-center gap-2 items-center text-sm font-normal text-text-1">
+                <Typography>No messages to display</Typography>
+                <Typography>Be the first to write!</Typography>
+              </div>
             )
           ) : (
             <LoadIndicator />
@@ -382,20 +395,25 @@ const CustomChat = ({ chat }) => {
                 <PhotoIconSolid className="h-6 w-6" />
               </IconButton>
             </Tooltip>
-            <Popover>
+            <div className="relative flex gap-1">
               <Tooltip content="Attach a gif" className="bg-tooltip/80 z-auto">
-                <PopoverHandler>
-                  <IconButton className="shadow-none rounded-full bg-transparent hover:bg-secondary-1/40 text-text-2 hover:text-text-1">
-                    <GifIcon className="h-6 w-6" />
-                  </IconButton>
-                </PopoverHandler>
+                <IconButton
+                  onClick={handleGifsClick}
+                  className="shadow-none rounded-full bg-transparent hover:bg-secondary-1/40 text-text-2 hover:text-text-1"
+                >
+                  <GifIcon className="h-6 w-6" />
+                </IconButton>
               </Tooltip>
-              <PopoverContent className="p-0">
+              <div
+                className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10"
+                hidden={!gifsOpen}
+              >
                 <GifPicker
                   tenorApiKey={"AIzaSyCw441pGntBTNbKuH5HE6tJTN8rnzkC3jE"}
+                  onGifClick={handleGifClick}
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
           </div>
           <div className="relative flex w-full">
             <textarea
@@ -423,19 +441,27 @@ const CustomChat = ({ chat }) => {
               />
             </IconButton>
           </div>
-          <div className="flex gap-1">
-            <Popover>
-              <Tooltip content="Pick an emoji" className="bg-tooltip/80 z-auto">
-                <PopoverHandler>
-                  <IconButton className="shadow-none rounded-full bg-transparent hover:bg-secondary-1/40 text-text-2 hover:text-text-1">
-                    <FaceSmileIcon className="h-6 w-6" />
-                  </IconButton>
-                </PopoverHandler>
-              </Tooltip>
-              <PopoverContent className="p-0">
-                <EmojiPicker emojiStyle={EmojiStyle.FACEBOOK} />
-              </PopoverContent>
-            </Popover>
+          <div className="relative flex gap-1">
+            <Tooltip content="Pick an emoji" className="bg-tooltip/80 z-auto">
+              <IconButton
+                onClick={handleEmojisClick}
+                className="shadow-none rounded-full bg-transparent hover:bg-secondary-1/40 text-text-2 hover:text-text-1"
+              >
+                <FaceSmileIcon className="h-6 w-6" />
+              </IconButton>
+            </Tooltip>
+            <div
+              className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10"
+              hidden={!emojisOpen}
+            >
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                emojiStyle={EmojiStyle.FACEBOOK}
+                skinTonesDisabled
+                emojiVersion="5.0"
+                lazyLoadEmojis
+              />
+            </div>
           </div>
         </div>
       </div>

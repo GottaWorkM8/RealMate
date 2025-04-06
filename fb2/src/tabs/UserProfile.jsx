@@ -46,6 +46,7 @@ const UserProfile = () => {
       id: userId,
       avatarURL: userProfile.avatarURL,
       displayName: userProfile.displayName,
+      lastActive: userProfile.lastActive.toDate(),
       isPublic: userPrefs.isPublic,
       firstName: userAbout.firstName,
       lastName: userAbout.lastName,
@@ -88,6 +89,7 @@ const UserProfile = () => {
               avatarURL={user.avatarURL}
               backgroundURL={user.backgroundURL}
               displayName={user.displayName}
+              lastActive={user.lastActive}
               friendCount={user.friendCount}
               isPublic={user.isPublic}
               isFriend={user.isFriend}

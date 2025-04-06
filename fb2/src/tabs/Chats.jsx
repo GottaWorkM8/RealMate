@@ -103,7 +103,7 @@ const Chats = () => {
 
   useEffect(() => {
     fetchChats();
-  }, [chats]);
+  }, []);
 
   const modifyChat = async (chatId, lastMessage) => {
     setChats((prevChats) =>
@@ -136,7 +136,7 @@ const Chats = () => {
 
   useEffect(() => {
     if (chats) fetchChatLastMessages();
-  }, [chats]);
+  }, [chats.length]);
 
   // FETCHING GROUP CHATS
   const [groupChats, setGroupChats] = useState([]);
@@ -175,10 +175,12 @@ const Chats = () => {
             userGroupChat.id
           );
           const groupChat = await getGroupChatData(userGroupChat.id);
-          const lastMessage = await getGroupChatMessage(
-            groupChat.id,
-            groupChat.lastMessage
-          );
+          let lastMessage = null;
+          if (groupChat.lastMessage)
+            lastMessage = await getGroupChatMessage(
+              groupChat.id,
+              groupChat.lastMessage
+            );
           matchedChats.push({
             id: groupChat.id,
             avatarURL: groupChatProfile.avatarURL,
@@ -236,7 +238,7 @@ const Chats = () => {
 
   useEffect(() => {
     if (groupChats) fetchGroupChatLastMessages();
-  }, [groupChats]);
+  }, [groupChats.length]);
 
   // HANDLING TABS
   const [activeTab, setActiveTab] = useState(0);
@@ -255,7 +257,6 @@ const Chats = () => {
     if (match) {
       const chatId = match[1];
       setActiveChatId(chatId);
-      setActiveChatKey((prevKey) => prevKey + 1);
     }
   }, [location.pathname]);
 
@@ -267,12 +268,14 @@ const Chats = () => {
       if (chat) {
         setActiveChatId(chat.id);
         setActiveChat(chat);
+        setActiveChatKey((prevKey) => prevKey + 1);
         return;
       }
       const groupChat = groupChats.find((item) => item.id === activeChatId);
       if (groupChat) {
         setActiveChatId(groupChat.id);
         setActiveGroupChat(groupChat);
+        setActiveGroupChatKey((prevKey) => prevKey + 1);
         return;
       }
     }
@@ -345,7 +348,7 @@ const Chats = () => {
             <LoadIndicator />
           )
         ) : (
-          <div className="flex flex-col w-full h-full items-center justify-center">
+          <div className="flex flex-col w-full h-full items-center justify-center bg-container">
             <ChatBubbleOvalLeftEllipsisIcon className="h-44 w-44 text-primary-2" />
             <CursorArrowRippleIcon className="h-36 w-36 -mt-24 ml-20 text-text-2" />
             <Typography

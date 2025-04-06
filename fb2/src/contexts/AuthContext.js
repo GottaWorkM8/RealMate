@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
         const fullName = firstName + " " + lastName;
 
         const avatarDownloadURL = await getDownloadURL(
-          ref(storage, "avatars/user.png")
+          ref(storage, "avatars/users/user.png")
         );
         await updateProfile(user, {
           displayName: fullName,
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
         await setUserProfile(user.uid, fullName, avatarDownloadURL);
         await setUserPrefs(user.uid);
         const bgDownloadURL = await getDownloadURL(
-          ref(storage, "backgrounds/background.jpg")
+          ref(storage, "backgrounds/users/background.jpg")
         );
         await setUserAbout(
           user.uid,

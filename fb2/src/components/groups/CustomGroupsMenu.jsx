@@ -8,7 +8,6 @@ import {
   List,
   ListItem,
   ListItemPrefix,
-  Card,
   Typography,
 } from "@material-tailwind/react";
 import React, { useState, useEffect } from "react";

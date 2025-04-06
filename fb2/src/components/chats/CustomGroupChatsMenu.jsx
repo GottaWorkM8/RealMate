@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
   Avatar,
   Typography,
@@ -17,14 +17,16 @@ import { useAuth } from "contexts/AuthContext";
 import { ChevronDownIcon, PlusCircleIcon } from "@heroicons/react/24/solid";
 import CustomSearchInput from "components/inputs/CustomSearchInput";
 import CustomInput from "components/inputs/CustomInput";
-import { compressProfileImage } from "utils";
+import { compressProfileImage, generateGroupKeywords } from "utils";
 import { useNavigate } from "react-router-dom";
-import CustomChatMember from "./CustomChatMember";
 import {
   getUserGroupChatKeywordSetsData,
-  getUserFriendKeywordSetsData,
   getUserProfileData,
+  setGroupChat,
+  getUserKeywordSetsData,
+  getUserFriendKeywordSetsData,
 } from "apis/firebase";
+import CustomMembersList from "./CustomMembersList";
 
 const CustomGroupChatsMenu = ({ chats }) => {
   // CURRENT USER
@@ -32,13 +34,6 @@ const CustomGroupChatsMenu = ({ chats }) => {
 
   // NAVIGATION TO OTHER PAGES
   const navigate = useNavigate();
-
-  // SETTING CHATS
-  const [userChats, setUserChats] = useState([]);
-
-  useEffect(() => {
-    if (chats) setUserChats(chats);
-  }, [chats]);
 
   // SEARCHING FOR CHATS
   const [foundChats, setFoundChats] = useState([]);
@@ -50,7 +45,7 @@ const CustomGroupChatsMenu = ({ chats }) => {
     );
     const matchedChats = [];
     for (const groupChat of groupChats) {
-      const userChat = userChats.find((chat) => chat.id === groupChat.id);
+      const userChat = chats.find((chat) => chat.id === groupChat.id);
       if (userChat) matchedChats.push(userChat);
     }
     setFoundChats(matchedChats);
@@ -59,19 +54,6 @@ const CustomGroupChatsMenu = ({ chats }) => {
   // HANDLING SEARCH RESULT CLICK
   const handleResultClick = (chatId) => {
     navigate(`/chats/${chatId}`);
-  };
-
-  // ADDING NEW CHAT
-  const [chatDialogOpen, setChatDialogOpen] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupNameError, setGroupNameError] = useState(false);
-  const [groupAvatar, setGroupAvatar] = useState(null);
-
-  const handleChatDialogOpen = () => {
-    setChatDialogOpen(!chatDialogOpen);
-  };
-  const handleChatDialogConfirm = () => {
-    setChatDialogOpen(false);
   };
 
   // HANDLING NEW CHAT ACCORDION
@@ -88,15 +70,19 @@ const CustomGroupChatsMenu = ({ chats }) => {
   };
 
   // FUNCTIONS FOR INPUT VALIDATION
+  const [groupName, setGroupName] = useState("");
+  const [groupNameError, setGroupNameError] = useState(false);
+
   const validateGroupName = (name) => {
     const hasValidCharacters = /^[a-zA-ZĄąĆćĘęŁłŃńÓóŚśŹźŻż0-9\s]+$/;
     const error = name.length < 1 || !hasValidCharacters.test(name);
-
     setGroupNameError(error);
     return !error;
   };
 
   // UPLOADING NEW GROUP CHAT IMAGE
+  const [groupAvatar, setGroupAvatar] = useState(null);
+
   const fileInputRef = useRef(null);
 
   const handleFileClick = () => {
@@ -124,13 +110,56 @@ const CustomGroupChatsMenu = ({ chats }) => {
     setFoundUsers(matchedUsers);
   };
 
-  // HANDLE NEW CHAT MEMBER SEARCH RESULT CLICK
+  // HANDLE ADDING MEMBERS
   const [addedMembers, setAddedMembers] = useState([]);
 
   const handleMemberResultClick = (userId) => {
-    const member = foundUsers.find((user) => user.id === userId);
-    if (member) setAddedMembers((members) => [...members, member]);
+    const userAdded = addedMembers.some((member) => member.id === userId);
+    if (!userAdded) {
+      const member = foundUsers.find((user) => user.id === userId);
+      if (member) setAddedMembers((members) => [...members, member]);
+    }
   };
+  const handleAddedMemberClick = (userId) => {
+    setAddedMembers((members) =>
+      members.filter((member) => member.id !== userId)
+    );
+  };
+
+  // HANDLING DIALOG
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+
+  const handleChatDialogOpen = () => {
+    setChatDialogOpen(!chatDialogOpen);
+  };
+  const handleChatDialogCancel = async () => {
+    setGroupNameError(false);
+    setGroupName("");
+    setGroupAvatar(null);
+    setAddedMembers([]);
+    setChatDialogOpen(false);
+  };
+  const handleChatDialogConfirm = async () => {
+    setLoading(true);
+    const name = groupName;
+    if (validateGroupName(name)) {
+      const memberIds = addedMembers.map((member) => member.id);
+      const keywords = generateGroupKeywords(name);
+      const chatId = await setGroupChat(
+        currentUser.uid,
+        memberIds,
+        name,
+        groupAvatar,
+        keywords
+      );
+      setChatDialogOpen(false);
+      navigate(`/chats/${chatId}`);
+    }
+    setLoading(false);
+  };
+
+  // STATE OF THE BUTTON
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className="flex flex-col p-4 pb-2 gap-2">
@@ -158,44 +187,9 @@ const CustomGroupChatsMenu = ({ chats }) => {
           className="bg-background"
         >
           <DialogHeader className="text-text-2">Create new chat</DialogHeader>
-          <DialogBody className="h-dialog overflow-auto text-text-3">
-            <div className="flex flex-col p-2 gap-6">
-              <div className="flex flex-col gap-3">
-                <CustomSearchInput
-                  placeholder="Search for members"
-                  onSearch={handleUserSearch}
-                  results={foundUsers}
-                  onResultClick={handleMemberResultClick}
-                />
-                <Accordion open={accordionOpen} animate={customAnimation}>
-                  <AccordionHeader
-                    onClick={handleAccordionOpen}
-                    className="flex rounded-md p-2 border-0 text-sm font-semibold text-text-2 hover:text-text-2 hover:bg-secondary-4"
-                  >
-                    <div className="flex w-full items-center">
-                      Added members
-                    </div>
-                    <ChevronDownIcon
-                      className={`h-4 w-4 transition-transform ${
-                        accordionOpen && "rotate-180"
-                      }`}
-                    />
-                  </AccordionHeader>
-                  <AccordionBody className="py-1 px-3 gap-1">
-                    {addedMembers.length > 0 ? "" : "None"}
-                    {addedMembers.map(({ id, displayName, avatarURL }) => {
-                      return (
-                        <CustomChatMember
-                          id={id}
-                          displayName={displayName}
-                          avatarURL={avatarURL}
-                        />
-                      );
-                    })}
-                  </AccordionBody>
-                </Accordion>
-              </div>
-              <div className="flex w-full items-center gap-3">
+          <DialogBody className="h-dialog p-6 pt-0 overflow-auto text-text-3">
+            <div className="flex flex-col h-full gap-6">
+              <div className="flex items-center gap-3">
                 <div className="flex-1 flex-col">
                   <CustomInput
                     placeholder="Group chat name"
@@ -225,7 +219,7 @@ const CustomGroupChatsMenu = ({ chats }) => {
                     src={
                       groupAvatar
                         ? URL.createObjectURL(groupAvatar)
-                        : "https://firebasestorage.googleapis.com/v0/b/realmate-12bb1.appspot.com/o/avatars%2Fgroup.png?alt=media&token=9d4f32df-8837-4a2a-af45-de7b08614d56"
+                        : "https://firebasestorage.googleapis.com/v0/b/realmate-12bb1.appspot.com/o/avatars%2FgroupChats%2FgroupChat.png?alt=media&token=0d10023d-9d88-46db-b438-1d53606ae0f8"
                     }
                     className="border border-secondary-1 bg-avatar"
                   />
@@ -237,22 +231,58 @@ const CustomGroupChatsMenu = ({ chats }) => {
                   </IconButton>
                 </div>
               </div>
+              <div className="flex flex-col gap-3">
+                <CustomSearchInput
+                  placeholder="Search for members"
+                  onSearch={handleUserSearch}
+                  results={foundUsers}
+                  onResultClick={handleMemberResultClick}
+                />
+                <Accordion open={accordionOpen} animate={customAnimation}>
+                  <AccordionHeader
+                    onClick={handleAccordionOpen}
+                    className="flex rounded-md p-2 border-0 text-sm font-semibold text-text-2 hover:text-text-2 hover:bg-secondary-4"
+                  >
+                    <Typography className="text-sm font-semibold text-text-2 w-full">
+                      Added members
+                    </Typography>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform ${
+                        accordionOpen && "rotate-180"
+                      }`}
+                    />
+                  </AccordionHeader>
+                  <AccordionBody className="flex flex-col py-1 px-3 gap-1">
+                    {addedMembers.length ? (
+                      <CustomMembersList
+                        members={addedMembers}
+                        onMemberClick={handleAddedMemberClick}
+                      />
+                    ) : (
+                      <Typography className="text-sm font-light text-text-1">
+                        None
+                      </Typography>
+                    )}
+                  </AccordionBody>
+                </Accordion>
+              </div>
             </div>
           </DialogBody>
           <DialogFooter className="space-x-2">
             <Button
               variant="text"
               color="blue-gray"
-              onClick={handleChatDialogOpen}
+              onClick={handleChatDialogCancel}
             >
               Cancel
             </Button>
             <Button
               variant="gradient"
+              loading={loading}
               color="teal"
               onClick={handleChatDialogConfirm}
             >
-              Confirm
+              {loading ? "Loading" : "Confirm"}
             </Button>
           </DialogFooter>
         </Dialog>

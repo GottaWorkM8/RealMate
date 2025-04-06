@@ -73,7 +73,7 @@ function Friends() {
           <CustomFriendsMenu />
         </div>
       </div>
-      <div className="w-3/4">
+      <div className="w-3/4 bg-container">
         <CustomFriends />
       </div>
     </div>

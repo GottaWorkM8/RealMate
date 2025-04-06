@@ -25,7 +25,7 @@ import {
 } from "apis/firebase";
 import CustomButton from "components/buttons/CustomButton";
 import { useAuth } from "contexts/AuthContext";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { compressBackgroundImage, compressProfileImage } from "utils";
 
@@ -34,6 +34,7 @@ const CustomUserProfileTop = ({
   avatarURL,
   backgroundURL,
   displayName,
+  lastActive,
   friendCount,
   isPublic,
   isFriend,
@@ -48,6 +49,8 @@ const CustomUserProfileTop = ({
   const navigate = useNavigate();
 
   // UPLOADING NEW PROFILE IMAGE
+  const [changedProfile, setChangedProfile] = useState(null);
+
   const profileInputRef = useRef(null);
 
   const handleProfileClick = () => {
@@ -58,11 +61,14 @@ const CustomUserProfileTop = ({
     if (!file) return;
     const compressedFile = await compressProfileImage(file);
     updateUserProfileImage(currentUser, compressedFile);
+    setChangedProfile(compressedFile);
     e.target.value = null;
     console.log("Profile uploaded:", file.name);
   };
 
   // UPLOADING NEW BACKGROUND IMAGE
+  const [changedBackground, setChangedBackground] = useState(null);
+
   const backgroundInputRef = useRef(null);
 
   const handleBackgroundClick = () => {
@@ -73,17 +79,31 @@ const CustomUserProfileTop = ({
     if (!file) return;
     const compressedFile = await compressBackgroundImage(file);
     updateUserBackgroundImage(currentUser.uid, compressedFile);
+    setChangedBackground(compressedFile);
     e.target.value = null;
     console.log("Background uploaded:", file.name);
   };
 
   // STATES
+  const [active, setActive] = useState(false);
   const [count, setCount] = useState(friendCount);
   const [closeFriend, setCloseFriend] = useState(isClose);
   const [currentFriend, setCurrentFriend] = useState(isFriend);
   const [userInvited, setUserInvited] = useState(isInviteSent);
   const [currentUserInvited, setCurrentUserInvited] =
     useState(isInviteReceived);
+
+  const handleActive = () => {
+    const date = new Date();
+    const timeDiffMils = date.getTime() - lastActive.getTime();
+    const timeDiffMins = timeDiffMils / (60 * 1000);
+    if (timeDiffMins > 1) setActive(false);
+    else setActive(true);
+  };
+
+  useEffect(() => {
+    if (lastActive) handleActive();
+  }, [lastActive]);
 
   // HANDLE BUTTON CLICKS
   const handleCloseButtonFriendClick = () => {
@@ -173,7 +193,11 @@ const CustomUserProfileTop = ({
     <div className="relative mb-4">
       <img
         alt=""
-        src={backgroundURL}
+        src={
+          changedBackground
+            ? URL.createObjectURL(changedBackground)
+            : backgroundURL
+        }
         className="rounded-b-md object-cover object-center"
       />
       <div className="py-6 px-9">
@@ -184,10 +208,13 @@ const CustomUserProfileTop = ({
             className="h-8 w-8 border-background"
             overlap="circular"
             placement="bottom-end"
+            invisible={!active}
           >
             <img
               alt=""
-              src={avatarURL}
+              src={
+                changedProfile ? URL.createObjectURL(changedProfile) : avatarURL
+              }
               className="h-[200px] w-[200px] rounded-full object-cover object-center border-4 border-background bg-avatar"
             />
           </Badge>
@@ -197,7 +224,7 @@ const CustomUserProfileTop = ({
             <Typography className="text-4xl font-bold text-text-1">
               {displayName}
             </Typography>
-            <Typography className="flex gap-3 text-sm font-semibold text-text-3">
+            <div className="flex gap-3 text-sm font-semibold text-text-3">
               <div className="flex gap-1 items-center">
                 <GlobeAltIcon className="h-4 w-4" />
                 {isPublic ? "Public user" : "Private user"}
@@ -206,7 +233,7 @@ const CustomUserProfileTop = ({
                 <UsersIcon className="h-4 w-4" />
                 {`${count} ${count === 1 ? "friend" : "friends"}`}
               </div>
-            </Typography>
+            </div>
           </div>
           <div className="flex gap-2 items-center">
             {currentUser.uid === userId ? (

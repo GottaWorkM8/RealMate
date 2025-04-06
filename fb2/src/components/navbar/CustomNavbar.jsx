@@ -105,11 +105,11 @@ const CustomNavbar = () => {
       const userProfile = await getUserProfileData(user.id);
       if (userProfile) matchedUsers.push(userProfile);
     }
+    setFoundUsers(matchedUsers);
     for (const group of groups) {
       const groupProfile = await getGroupProfileData(group.id);
       if (groupProfile) matchedGroups.push(groupProfile);
     }
-    setFoundUsers(matchedUsers);
     setFoundGroups(matchedGroups);
   };
 
@@ -126,15 +126,15 @@ const CustomNavbar = () => {
       <Navbar
         shadow={desktopMode}
         fullWidth
-        className="flex max-w-none h-16 px-6 py-2 space-x-12 bg-background"
+        className="flex max-w-none h-16 px-6 py-2 space-x-12 bg-background border-0"
       >
         <div className="flex items-center w-3/4 md:w-1/3 space-x-6 justify-start">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="flex h-full flex-shrink-0 items-center"
+            className="flex h-12 w-12 items-center"
           >
-            <img className="h-full" src={logo} alt="" />
+            <img src={logo} alt="" />
           </button>
           <CustomNavbarSearchInput
             placeholder="Search RealMate"

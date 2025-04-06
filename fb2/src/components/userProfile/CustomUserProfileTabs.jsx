@@ -76,22 +76,22 @@ const CustomUserProfileTabs = () => {
           </Tab>
         </TabsHeader>
         <TabsBody>
-          <TabPanel key={0} value={0}>
+          <TabPanel key={0} value={0} className="p-2">
             <CustomUserAbout />
           </TabPanel>
-          <TabPanel key={1} value={1}>
+          <TabPanel key={1} value={1} className="p-2">
             <CustomUserFriends />
           </TabPanel>
-          <TabPanel key={2} value={2}>
+          <TabPanel key={2} value={2} className="p-2">
             <CustomUserPosts />
           </TabPanel>
-          <TabPanel key={3} value={3}>
+          <TabPanel key={3} value={3} className="p-2">
             <CustomUserImages />
           </TabPanel>
-          <TabPanel key={4} value={4}>
+          <TabPanel key={4} value={4} className="p-2">
             <CustomUserVideos />
           </TabPanel>
-          <TabPanel key={5} value={5}>
+          <TabPanel key={5} value={5} className="p-2">
             <CustomUserLinks />
           </TabPanel>
         </TabsBody>

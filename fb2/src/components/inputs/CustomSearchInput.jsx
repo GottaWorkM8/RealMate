@@ -40,6 +40,7 @@ const CustomSearchInput = ({
   const [items, setItems] = useState([]);
 
   const handleClick = (itemId) => {
+    setTerm("");
     onResultClick(itemId);
   };
 

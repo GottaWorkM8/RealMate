@@ -6,6 +6,7 @@ import {
   getGroupPrefsData,
   getGroupProfileData,
   getUserGroupData,
+  isUserGroupAdmin,
   isUserGroupInviteReceived,
   isUserGroupInviteSent,
   isUserGroupMember,
@@ -30,6 +31,7 @@ const GroupProfile = () => {
     if (groupProfile) {
       const groupPrefs = await getGroupPrefsData(groupId);
       const groupAbout = await getGroupAboutData(groupId);
+      const isAdmin = await isUserGroupAdmin(currentUser.uid, groupId);
       const isMember = await isUserGroupMember(currentUser.uid, groupId);
       let joinDate = null;
       let isFavorite = false;
@@ -56,6 +58,7 @@ const GroupProfile = () => {
         memberCount: groupAbout.memberCount,
         backgroundURL: groupAbout.backgroundURL,
         creationDate: groupAbout.creationDate.toDate(),
+        isAdmin: isAdmin,
         isMember: isMember,
         joinDate: joinDate,
         isFavorite: isFavorite,
@@ -89,7 +92,9 @@ const GroupProfile = () => {
               memberCount={group.memberCount}
               isPublic={group.isPublic}
               isSafeForWork={group.isSafeForWork}
+              isAdmin={group.isAdmin}
               isMember={group.isMember}
+              joinDate={group.joinDate}
               isFavorite={group.isFavorite}
               isInviteSent={group.isInviteSent}
               isInviteReceived={group.isInviteReceived}
